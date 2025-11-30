@@ -1,0 +1,249 @@
+.page-content{
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    padding: 10px;
+}
+
+.blog-post{
+    background-color: #ffe2ea;
+    border-color: #e6ffe6;
+    border-style: solid;
+    border-width: 5px;
+
+}
+.blog-post img{
+    width: 100%;
+    border-color: #EDB96E;
+    border-width: 5px;
+    border-style: double;
+
+}
+
+.blog-post h1{
+    text-align: center;
+    font-size: 180%;
+}
+.blog-post h2{
+    text-align: center;
+    font-size: 120%;
+}
+
+body {
+    font-family: "lores-15-bold-alt-oakland", sans-serif;
+    font-weight: 160;
+    font-style: normal;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f4;
+    text-align: center;
+    align-content: center;
+    align-items: center;
+    justify-content: center;
+    background-image: url("./assets/bg.svg");
+    background-attachment: fixed;
+}
+.header {
+    margin-top: 4vh; /*proporcional al view height.*/
+}
+
+.page-wrapper {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    justify-content: center;
+    align-items: center;
+
+}
+.window {
+    position: relative;
+    width: 88%;
+    max-width: 600px;
+    margin: 20px auto;
+    padding: 0;
+    border: 2px solid #000;
+    background-color: #fff;
+    background-size: 100% 100%;
+    /* HACER BORDES PARA EL FONDO */
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: center; 
+}
+ 
+.window-title {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(255,159,181,1);
+    width: 100%;
+    padding: 5px 0;
+    margin: 0;
+    box-sizing: border-box;
+}
+
+.window-title button {
+    position: absolute;
+    right: 0px;   /* adjust as needed */
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+
+
+
+/* Container for buttons */
+.container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin: 10px 0;
+}
+
+.container .button,
+.container a.button {
+    display: inline-block;
+    flex: 1 1 100px;
+    min-width: 80px;
+    max-width: 150px;
+    padding: 1px;
+    border: 2px solid #000;
+    background-color: #f4f4f4;
+    cursor: pointer;
+    text-align: center;
+    box-sizing: border-box;
+    text-decoration: none; /* remove underline for links */
+    color: inherit;        /* keep text color consistent */
+}
+
+.container .button:hover,
+.container a.button:hover, .window-title button:hover {
+    background-color: #e84444;
+    color: #fff;
+}
+
+
+.container .button:hover {
+    background-color: #e84444;
+    color: #fff;
+}
+
+
+
+
+
+
+.image-container {
+    width: 40%;
+    max-width: 200px;
+    margin: 0 auto;           /* center the container itself */
+    text-align: center;       /* fallback centering */
+}
+
+
+
+img, h1 img {
+    display: block;        /* block prevents inline quirks */
+    max-width: 60%;       /* never bigger than parent container */
+    height: auto;          /* maintain aspect ratio */
+    margin: 0 auto;        /* center the image */
+
+    height: auto;
+}
+
+
+
+
+
+.title-logo{
+    width: 100%;          /* or whatever max size you want */
+
+    /* maintain aspect ratio: 1:1 for square, adjust as needed */
+    aspect-ratio: 2 / 1;           /* modern browsers support this */
+
+    margin: 0 auto;
+}
+
+
+
+/* Estilos para formularios */
+.form-wrapper {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    padding: 10px;
+    max-width: 90%;
+
+}
+
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+}
+
+.form-group label {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.form-group input,
+.form-group select {
+    padding: 8px;
+    border: 2px solid #000;
+    font-family: "lores-15-bold-alt-oakland", sans-serif;
+    background-color: #fff;
+    color: #1a1a1a;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+    outline: none;
+}
+
+.error-message {
+    color: red;
+    font-size: 0.9em;
+    margin-top: 5px;
+    min-height: 1.2em;
+}
+
+
+.message {
+    padding: 10px;
+    margin: 10px 0;
+    border: 2px solid;
+    text-align: center;
+}
+
+.message.success {
+    border-color: green;
+    background-color: #e6ffe6;
+    color: green;
+}
+
+.message.error {
+    border-color: red;
+    background-color: #ffe6e6;
+    color: red;
+}
+
+@media (max-width: 350px) {
+    .window {
+        margin: 10px 5px; /* small margins */
+        padding: 5px;     /* reduce padding */
+    }
+}
