@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 
+import GratedCheese from "../assets/armatupizza/gratedcheese.svg"
 export default function ArmaTuPizza({ cart, setCart }) {
   const canvasRef = useRef(null);
   const [ingredients, setIngredients] = useState([]);
@@ -12,7 +13,7 @@ export default function ArmaTuPizza({ cart, setCart }) {
   const availableIngredients = [
     { id: "salsa-roja", name: "Salsa de Tomate", price: 500, max: 1, color: "#DC2626", image: "src/assets/salsatomate.png", type: "salsa" },
     { id: "salsa-bbq", name: "Salsa BBQ", price: 600, max: 1, color: "#92400E", image: "src/assets/salsa_bbq.png", type: "salsa" },
-    { id: "queso", name: "Queso", price: 500, max: 5, image: "src/assets/queso_rallado.png", type: "topping" },
+    { id: "queso", name: "Queso", price: 500, max: 5, image: GratedCheese, type: "topping" },
     { id: "tomate", name: "Tomate", price: 200, max: 5, image: "src/assets/tomate.png", type: "topping" },
     { id: "pepperoni", name: "Pepperoni", price: 250, max: 5, image: "src/assets/pepperoni.png", type: "topping" },
     { id: "cebolla", name: "Cebolla", price: 150, max: 5, image: "src/assets/cebolla.png", type: "topping" },
