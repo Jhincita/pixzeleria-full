@@ -1,166 +1,233 @@
-// src/pages/Signup.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
+import { authAPI } from "../services/api";
 
-// Datos de regiones y comunas de Chile
-const chileData = {
-    regiones: [
-        {
-            id: 1,
-            nombre: "Región Metropolitana",
-            comunas: [
-                "Las Condes",
-                "Providencia",
-                "Vitacura",
-                "La Reina",
-                "Maipú",
-                "Puente Alto",
-                "Santiago Centro",
-                "La Florida",
-                "Peñalolén",
-                "Ñuñoa"
-            ]
-        },
-        { id: 2, nombre: "Arica y Parinacota", comunas: ["Arica", "Putre"] },
-        { id: 3, nombre: "Tarapacá", comunas: ["Iquique", "Alto Hospicio"] },
-        { id: 4, nombre: "Antofagasta", comunas: ["Antofagasta", "Calama"] },
-        { id: 5, nombre: "Atacama", comunas: ["Copiapó", "Vallenar"] },
-        { id: 6, nombre: "Coquimbo", comunas: ["La Serena", "Coquimbo"] },
-        { id: 7, nombre: "Valparaíso", comunas: ["Valparaíso", "Viña del Mar"] },
-        { id: 8, nombre: "O’Higgins", comunas: ["Rancagua", "San Fernando"] },
-        { id: 9, nombre: "Maule", comunas: ["Talca", "Curicó"] },
-        { id: 10, nombre: "Ñuble", comunas: ["Chillán", "San Carlos"] },
-        { id: 11, nombre: "Biobío", comunas: ["Concepción", "Los Ángeles"] },
-        { id: 12, nombre: "La Araucanía", comunas: ["Temuco", "Villarrica"] },
-        { id: 13, nombre: "Los Ríos", comunas: ["Valdivia", "Panguipulli"] },
-        { id: 14, nombre: "Los Lagos", comunas: ["Puerto Montt", "Osorno"] },
-        { id: 15, nombre: "Aysén", comunas: ["Coyhaique", "Puerto Aysén"] },
-        { id: 16, nombre: "Magallanes", comunas: ["Punta Arenas", "Puerto Natales"] }
-    ]
-};
-
-export default function Signup() {
-    const [form, setForm] = useState({
+export default function Signup({ onClose }) {
+    const [formData, setFormData] = useState({
+        firstName: "",
+        lastName: "",
         username: "",
-        email: "",
         password: "",
-        confirmPassword: "",
-        region: "",
-        comuna: "",
-        favoritePizza: ""
+        confirmPassword: ""
     });
     const [errors, setErrors] = useState({});
-    const [comunas, setComunas] = useState([]);
-
-    useEffect(() => {
-        // Cuando cambia la región, actualizar comunas
-        const selectedRegion = chileData.regiones.find(r => r.nombre === form.region);
-        if (selectedRegion) setComunas(selectedRegion.comunas);
-        else setComunas([]);
-    }, [form.region]);
+    const [isLoading, setIsLoading] = useState(false);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setForm({ ...form, [name]: value });
+        setFormData(prev => ({
+            ...prev,
+            [name]: value
+        }));
+        // Clear error for this field
+        if (errors[name]) {
+            setErrors(prev => ({
+                ...prev,
+                [name]: ""
+            }));
+        }
     };
 
-    const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-
-    const handleSubmit = (e) => {
-        e.preventDefault();
+    const validateForm = () => {
         const newErrors = {};
 
-        // Validaciones
-        if (!form.username) newErrors.username = "El nombre de usuario es obligatorio.";
-        else if (form.username.length > 100) newErrors.username = "Máximo 100 caracteres.";
+        if (!formData.firstName.trim()) {
+            newErrors.firstName = "El nombre es obligatorio";
+        }
 
-        if (!form.email) newErrors.email = "El email es obligatorio.";
-        else if (!isValidEmail(form.email)) newErrors.email = "Email inválido.";
+        if (!formData.lastName.trim()) {
+            newErrors.lastName = "El apellido es obligatorio";
+        }
 
-        if (!form.password) newErrors.password = "La contraseña es obligatoria.";
-        else if (form.password.length < 4 || form.password.length > 10)
-            newErrors.password = "Debe tener entre 4 y 10 caracteres.";
+        if (!formData.username.trim()) {
+            newErrors.username = "El nombre de usuario es obligatorio";
+        } else if (formData.username.length < 3) {
+            newErrors.username = "El nombre de usuario debe tener al menos 3 caracteres";
+        }
 
-        if (!form.confirmPassword) newErrors.confirmPassword = "Confirma tu contraseña.";
-        else if (form.password !== form.confirmPassword)
-            newErrors.confirmPassword = "Las contraseñas no coinciden.";
+        if (!formData.password) {
+            newErrors.password = "La contraseña es obligatoria";
+        } else if (formData.password.length < 4) {
+            newErrors.password = "La contraseña debe tener al menos 4 caracteres";
+        }
+
+        if (formData.password !== formData.confirmPassword) {
+            newErrors.confirmPassword = "Las contraseñas no coinciden";
+        }
 
         setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
 
-        if (Object.keys(newErrors).length === 0) {
-            // Guardar en localStorage (igual que en tu JS)
-            const users = JSON.parse(localStorage.getItem("pixeleriaUsers")) || [];
-            if (users.some(u => u.username === form.username)) {
-                setErrors({ username: "Este nombre de usuario ya está registrado" });
-                return;
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+
+        if (!validateForm()) {
+            return;
+        }
+
+        setIsLoading(true);
+
+        try {
+            // Call backend register endpoint
+            const response = await authAPI.register({
+                firstName: formData.firstName,
+                lastName: formData.lastName,
+                username: formData.username,
+                password: formData.password,
+                role: "CLIENTE" // Default role
+            });
+
+            // Save token from registration
+            const token = response.data.token;
+            localStorage.setItem('token', token);
+            localStorage.setItem('user', JSON.stringify({
+                username: formData.username,
+                firstName: formData.firstName,
+                lastName: formData.lastName
+            }));
+
+            console.log("Registration successful!", response.data);
+            alert("¡Registro exitoso! Bienvenido a Pixzelería ✨");
+
+            // Close signup window and redirect
+            onClose();
+            window.location.href = '/'; // Or use navigate if using React Router
+
+        } catch (error) {
+            console.error("Registration error:", error);
+
+            if (error.response) {
+                if (error.response.status === 409) {
+                    setErrors({
+                        general: "El nombre de usuario ya existe"
+                    });
+                } else if (error.response.data?.message) {
+                    setErrors({
+                        general: error.response.data.message
+                    });
+                } else {
+                    setErrors({
+                        general: "Error al registrarse. Intenta de nuevo."
+                    });
+                }
+            } else {
+                setErrors({
+                    general: "Error de conexión. Verifica que el servidor esté corriendo."
+                });
             }
-            if (users.some(u => u.email === form.email)) {
-                setErrors({ email: "Este email ya está registrado" });
-                return;
-            }
-
-            const newUser = { ...form, registrationDate: new Date().toISOString() };
-            users.push(newUser);
-            localStorage.setItem("pixeleriaUsers", JSON.stringify(users));
-
-            alert("Registro exitoso. Ahora puedes iniciar sesión.");
-            window.location.href = "/"; // Redirigir
+        } finally {
+            setIsLoading(false);
         }
     };
 
     return (
-        <div className="form-wrapper" >
+        <div className="form-wrapper">
             <form className="auth-form" onSubmit={handleSubmit}>
+                {errors.general && (
+                    <div className="error-message general-error" style={{
+                        color: 'red',
+                        marginBottom: '15px',
+                        padding: '10px',
+                        border: '2px solid red',
+                        backgroundColor: '#ffe6e6'
+                    }}>
+                        {errors.general}
+                    </div>
+                )}
+
                 <div className="form-group">
-                    <label>Nombre de usuario:</label>
-                    <input name="username" value={form.username} onChange={handleChange} maxLength={100} />
-                    <div className="error-message">{errors.username}</div>
+                    <label htmlFor="firstName">Nombre:</label>
+                    <input
+                        type="text"
+                        id="firstName"
+                        name="firstName"
+                        value={formData.firstName}
+                        onChange={handleChange}
+                        disabled={isLoading}
+                        required
+                    />
+                    {errors.firstName && (
+                        <div className="error-message">{errors.firstName}</div>
+                    )}
                 </div>
 
                 <div className="form-group">
-                    <label>Email:</label>
-                    <input name="email" type="email" value={form.email} onChange={handleChange} />
-                    <div className="error-message">{errors.email}</div>
+                    <label htmlFor="lastName">Apellido:</label>
+                    <input
+                        type="text"
+                        id="lastName"
+                        name="lastName"
+                        value={formData.lastName}
+                        onChange={handleChange}
+                        disabled={isLoading}
+                        required
+                    />
+                    {errors.lastName && (
+                        <div className="error-message">{errors.lastName}</div>
+                    )}
                 </div>
 
                 <div className="form-group">
-                    <label>Contraseña (4-10 caracteres):</label>
-                    <input name="password" type="password" value={form.password} onChange={handleChange} minLength={4} maxLength={10} />
-                    <div className="error-message">{errors.password}</div>
+                    <label htmlFor="username">Nombre de usuario:</label>
+                    <input
+                        type="text"
+                        id="username"
+                        name="username"
+                        value={formData.username}
+                        onChange={handleChange}
+                        maxLength={100}
+                        disabled={isLoading}
+                        required
+                    />
+                    {errors.username && (
+                        <div className="error-message">{errors.username}</div>
+                    )}
                 </div>
 
                 <div className="form-group">
-                    <label>Repetir contraseña:</label>
-                    <input name="confirmPassword" type="password" value={form.confirmPassword} onChange={handleChange} minLength={4} maxLength={10} />
-                    <div className="error-message">{errors.confirmPassword}</div>
+                    <label htmlFor="password">Contraseña:</label>
+                    <input
+                        type="password"
+                        id="password"
+                        name="password"
+                        value={formData.password}
+                        onChange={handleChange}
+                        minLength={4}
+                        maxLength={10}
+                        disabled={isLoading}
+                        required
+                    />
+                    {errors.password && (
+                        <div className="error-message">{errors.password}</div>
+                    )}
                 </div>
 
                 <div className="form-group">
-                    <label>Región:</label>
-                    <select name="region" value={form.region} onChange={handleChange}>
-                        <option value="">Selecciona una región</option>
-                        {chileData.regiones.map(r => <option key={r.id} value={r.nombre}>{r.nombre}</option>)}
-                    </select>
+                    <label htmlFor="confirmPassword">Confirmar contraseña:</label>
+                    <input
+                        type="password"
+                        id="confirmPassword"
+                        name="confirmPassword"
+                        value={formData.confirmPassword}
+                        onChange={handleChange}
+                        minLength={4}
+                        maxLength={10}
+                        disabled={isLoading}
+                        required
+                    />
+                    {errors.confirmPassword && (
+                        <div className="error-message">{errors.confirmPassword}</div>
+                    )}
                 </div>
 
-                <div className="form-group">
-                    <label>Comuna:</label>
-                    <select name="comuna" value={form.comuna} onChange={handleChange} disabled={!form.region}>
-                        <option value="">{form.region ? "Selecciona una comuna" : "Primero selecciona una región"}</option>
-                        {comunas.map(c => <option key={c} value={c}>{c}</option>)}
-                    </select>
-                </div>
-
-                <div className="form-group">
-                    <label>Pizza favorita (opcional):</label>
-                    <input name="favoritePizza" value={form.favoritePizza} onChange={handleChange} maxLength={100} />
-                </div>
-
-                <button type="submit" className="pixel-button">Registrarse</button>
+                <button
+                    type="submit"
+                    className="pixel-button"
+                    disabled={isLoading}
+                >
+                    {isLoading ? "Registrando..." : "Registrarse"}
+                </button>
             </form>
-
-            <p>
-                ¿Ya tienes cuenta? <a href="/login">Inicia sesión aquí</a>
-            </p>
         </div>
     );
 }

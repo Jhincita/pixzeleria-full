@@ -1,19 +1,83 @@
 import axios from 'axios';
 
-// Base URL of your backend
-const BASE_URL = "http://localhost:8080/api";
-export async function getClients() {
-    const response = await fetch(`${BASE_URL}/clients`);
-    return response.json();
-}
+const API_BASE_URL = 'http://localhost:8080/api';
 
+const api = axios.create({
+    baseURL: API_BASE_URL,
+    headers: {
+        'Content-Type': 'application/json',
+    },
+});
 
-// Example: delete a client
-export const deleteClient = (id) => {
-    return axios.delete(`${BASE_URL}/api/clients/${id}`);
+// Add token to all requests
+api.interceptors.request.use(
+    (config) => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+    },
+    (error) => {
+        return Promise.reject(error);
+    }
+);
+
+// Pizza API
+export const pizzaAPI = {
+    // Create custom pizza
+    createCustomPizza: (pizzaData) => api.post('/pizzas/custom', pizzaData),
+
+    // Get all pizzas
+    getAllPizzas: () => api.get('/pizzas'),
+
+    // Get pizza by ID
+    getPizzaById: (id) => api.get(`/pizzas/${id}`),
 };
 
-// Example: add a client
-export const addClient = (clientData) => {
-    return axios.post(`${BASE_URL}/api/clients`, clientData);
+// Client API
+export const clientAPI = {
+    // Register new client
+    register: (clientData) => api.post('/clients', clientData),
+
+    // Get all clients
+    getAllClients: () => api.get('/clients'),
+
+    // Get client by ID
+    getClientById: (id) => api.get(`/clients/${id}`),
 };
+
+// Auth API
+export const authAPI = {
+    // Login
+    login: (credentials) => api.post('/v1/auth/authenticate', credentials),
+
+    // Register
+    register: (userData) => api.post('/v1/auth/register', userData),
+
+    // Logout (clear token from localStorage)
+    logout: () => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+    },
+
+    // Check if user is logged in
+    isAuthenticated: () => {
+        return !!localStorage.getItem('token');
+    },
+
+    // Get current user
+    getCurrentUser: () => {
+        const user = localStorage.getItem('user');
+        return user ? JSON.parse(user) : null;
+    }
+};
+
+// Shorthand exports for convenience
+export const getClients = () => api.get('/clients');
+export const getClient = (id) => api.get(`/clients/${id}`);
+export const createClient = (data) => api.post('/clients', data);
+export const getAllPizzas = () => api.get('/pizzas');
+export const createPizza = (data) => api.post('/pizzas/custom', data);
+
+export default api;

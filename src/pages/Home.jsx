@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { getClients } from "../services/api"; // make sure path is correct
-
+import { clientAPI } from '../services/api';
 export default function Home() {
     const [clients, setClients] = useState([]);
 
     useEffect(() => {
-        getClients()
+        clientAPI.getAllClients()
             .then(res => setClients(res.data))
             .catch(err => console.error("Error fetching clients:", err));
     }, []);
