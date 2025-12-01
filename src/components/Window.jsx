@@ -2,7 +2,14 @@
 import React from "react";
 import { useSpring, animated } from "@react-spring/web";
 
-export default function Window({ title, children, isOpen, onClose }) {
+export default function Window({
+                                   title,
+                                   children,
+                                   isOpen,
+                                   onClose,
+                                   width = "420px",          // default small window
+                                   maxWidth = "90vw"          // default safe limit
+                               }) {
     const styles = useSpring({
         y: isOpen ? 0 : -40,
         opacity: isOpen ? 1 : 0,
@@ -18,22 +25,23 @@ export default function Window({ title, children, isOpen, onClose }) {
                 position: "fixed",
                 top: "5%",
                 left: "50%",
-                transform: "translateX(-50%)",   // ONLY horizontal centering
+                transform: "translateX(-50%)",
                 zIndex: 9999,
-                width: "420px",
-                maxHeight: "85vh",
                 pointerEvents: "auto",
                 boxSizing: "border-box",
+                width,
+                maxWidth,
+                maxHeight: "90vh",
             }}
         >
-            {/* inner animated wrapper does NOT own the layout */}
             <animated.div
                 style={{
-                    transform: styles.y.to((y) => `translateY(${y}px)`)
-                        .to((t) => `${t}`),   // animation only
+                    transform: styles.y
+                        .to((y) => `translateY(${y}px)`)
+                        .to((t) => `${t}`),
                     scale: styles.scale,
                     opacity: styles.opacity,
-                    willChange: "transform, opacity"
+                    willChange: "transform, opacity",
                 }}
             >
                 <div
@@ -44,16 +52,17 @@ export default function Window({ title, children, isOpen, onClose }) {
                         borderRadius: "12px",
                         overflow: "hidden",
                         boxShadow: "0 10px 30px rgba(0,0,0,0.3)",
-                        maxHeight: "85vh",
-                        height: "auto",
+                        height: "100%",
+                        maxHeight: "90vh",
                     }}
                 >
+                    {/* HEADER */}
                     <div
                         style={{
                             padding: "12px 16px",
                             borderBottom: "1px solid rgba(0,0,0,0.1)",
                             background: "#f7f7f7",
-                            flex: "0 0 auto",
+                            flexShrink: 0,
                             display: "flex",
                             justifyContent: "space-between",
                             alignItems: "center",
@@ -66,20 +75,20 @@ export default function Window({ title, children, isOpen, onClose }) {
                                 background: "transparent",
                                 border: "none",
                                 cursor: "pointer",
-                                fontSize: "16px",
-                                lineHeight: 1,
+                                fontSize: "18px",
                             }}
                         >
                             ✕
                         </button>
                     </div>
 
+                    {/* MAIN CONTENT */}
                     <div
                         style={{
-                            padding: "12px",
+                            padding: "16px",
                             overflowY: "auto",
-                            flex: 1,
-                            WebkitOverflowScrolling: "touch"
+                            flexGrow: 1,
+                            WebkitOverflowScrolling: "touch",
                         }}
                     >
                         {children}
