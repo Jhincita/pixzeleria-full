@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:8080/api';
+const API_BASE_URL = '/api';
+
 
 const api = axios.create({
     baseURL: API_BASE_URL,
@@ -50,10 +51,10 @@ export const clientAPI = {
 // Auth API
 export const authAPI = {
     // Login
-    login: (credentials) => api.post('/v1/auth/authenticate', credentials),
+    login: (credentials) => api.post('/auth/login', credentials),
 
     // Register
-    register: (userData) => api.post('/v1/auth/register', userData),
+    register: (userData) => api.post('/auth/register', userData),
 
     // Logout (clear token from localStorage)
     logout: () => {
