@@ -16,8 +16,7 @@ export default function Menu({ cart, setCart }) {
     useEffect(() => {
         async function fetchMenu() {
             try {
-                const response = await pizzaAPI.getAllPizzas();
-                const data = await response.json();
+                const data = await pizzaAPI.getAllPizzas();  // ✅ Already returns JSON
                 setMenuItems(data);
             } catch (err) {
                 console.error("Failed to load menu:", err);
