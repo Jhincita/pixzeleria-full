@@ -15,7 +15,7 @@ import HomeSvg from "./assets/navbar/home.svg";
 import AboutSvg from "./assets/navbar/about.svg";
 import ContactSvg from "./assets/navbar/contact.svg";
 import LoginSvg from "./assets/navbar/login.svg";
-import ArmaTuPizzaSvg from "./assets/navbar/armaTuPizza.svg";
+import ArmaTuPizzaSvg from "./assets/navbar/armatupizza.svg";
 import BlogsSvg from "./assets/navbar/blogs.svg";
 import CartSvg from "./assets/navbar/cart.svg";
 import MenuSvg from "./assets/navbar/menu.svg";
