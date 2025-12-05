@@ -26,14 +26,9 @@ api.interceptors.request.use(
 
 // Pizza API
 export const pizzaAPI = {
-    // Create custom pizza
-    createCustomPizza: (pizzaData) => api.post('/pizzas/custom', pizzaData),
-
-    // Get all pizzas
-    getAllPizzas: () => api.get('/pizzas'),
-
-    // Get pizza by ID
-    getPizzaById: (id) => api.get(`/pizzas/${id}`),
+    getAllPizzas: () => api.get('/pizzas').then(res => res.data),
+    getPizzaById: (id) => api.get(`/pizzas/${id}`).then(res => res.data),
+    createCustomPizza: (pizzaData) => api.post('/pizzas/custom', pizzaData).then(res => res.data),
 };
 
 // Client API
