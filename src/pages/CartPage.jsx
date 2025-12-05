@@ -2,10 +2,18 @@ import React, { useState } from "react";
 import Window from "../components/Window";
 import CheckoutResult from "./CheckoutResult";
 
+import { orderAPI } from "../services/api.js";
+// Order API
+export const orderAPI = {
+    createOrder: (orderData) => api.post('/orders', orderData),
+    getAllOrders: () => api.get('/orders'),
+    getOrderById: (id) => api.get(`/orders/${id}`),
+};
+
 export default function CartPage({ cart, setCart }) {
     const [showCheckout, setShowCheckout] = useState(false);
     const [orderData, setOrderData] = useState(null);
-
+    const [isLoading, setIsLoading] = useState(false);
     const removeItem = (id) => {
         setCart(cart.filter(item => item.id !== id));
     };
@@ -22,17 +30,44 @@ export default function CartPage({ cart, setCart }) {
         (sum, item) => sum + item.price * item.quantity,
         0
     );
+    const handleCheckout = async () => {  // ← Make it async
+        setIsLoading(true);
 
-    const handleCheckout = () => {
-        setOrderData({
-            items: [...cart],
-            total: total,
-            timestamp: new Date()
-        });
-        setCart([]);
-        setShowCheckout(true);
+        try {
+            // Prepare order data for backend
+            const orderPayload = {
+                items: cart.map(item => ({
+                    pizzaId: item.id,
+                    name: item.name,
+                    quantity: item.quantity,
+                    price: item.price
+                })),
+                total: total,
+                timestamp: new Date().toISOString()
+            };
+
+            // Send to backend
+            const response = await orderAPI.createOrder(orderPayload);
+            console.log("Order created:", response.data);
+
+            // Set order data for confirmation screen
+            setOrderData({
+                id: response.data.id,  // Order ID from backend
+                items: [...cart],
+                total: total,
+                timestamp: new Date()
+            });
+
+            setCart([]);  // Clear cart after successful order
+            setShowCheckout(true);
+
+        } catch (error) {
+            console.error("Failed to create order:", error);
+            alert("Error al procesar tu pedido. Intenta de nuevo.");
+        } finally {
+            setIsLoading(false);
+        }
     };
-
     const handleCloseCheckout = () => {
         setShowCheckout(false);
         setOrderData(null);
@@ -168,19 +203,20 @@ export default function CartPage({ cart, setCart }) {
 
                         <button
                             onClick={handleCheckout}
+                            disabled={isLoading}
                             className="pixel-button"
                             style={{
                                 width: '100%',
                                 padding: '15px',
                                 fontSize: '1.1em',
-                                backgroundColor: '#4CAF50',
+                                backgroundColor: isLoading ? '#ccc' : '#4CAF50',
                                 color: '#fff',
                                 border: '2px solid #000',
-                                cursor: 'pointer',
+                                cursor: isLoading ? 'not-allowed' : 'pointer',
                                 fontWeight: 'bold'
                             }}
                         >
-                            Finalizar Compra
+                            {isLoading ? 'Procesando...' : 'Finalizar Compra'}
                         </button>
                     </div>
                 </>
