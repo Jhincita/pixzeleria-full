@@ -12,12 +12,26 @@ export default function Menu({ cart, setCart }) {
 
     const [selectedItem, setSelectedItem] = useState(null);
 
-
     useEffect(() => {
         async function fetchMenu() {
             try {
                 const response = await pizzaAPI.getAllPizzas();
-                setMenuItems(response.data);  // ← Must use .data
+                console.log("Full response:", response);
+
+                // Handle all possible response structures
+                let data;
+                if (Array.isArray(response)) {
+                    data = response;
+                } else if (response?.data && Array.isArray(response.data)) {
+                    data = response.data;
+                } else if (response?.data?.data && Array.isArray(response.data.data)) {
+                    data = response.data.data;
+                } else {
+                    console.error("Unexpected response structure:", response);
+                    data = [];
+                }
+
+                setMenuItems(data);
             } catch (err) {
                 console.error("Failed to load menu:", err);
                 setMenuItems([]);
@@ -78,6 +92,7 @@ export default function Menu({ cart, setCart }) {
         return item ? item.quantity : 0;
     };
     if (loading) return <p>Loading menu...</p>;
+    if (!menuItems || menuItems.length === 0) return <p>No pizzas available</p>;
     return (
         <div>
             <h2>Menú de Pizzas</h2>
