@@ -69,6 +69,18 @@ export const authAPI = {
     }
 };
 
+// Order API
+export const orderAPI = {
+    // Create new order
+    createOrder: (orderData) => api.post('/orders', orderData),
+
+    // Get all orders
+    getAllOrders: () => api.get('/orders'),
+
+    // Get order by ID
+    getOrderById: (id) => api.get(`/orders/${id}`),
+};
+
 // Shorthand exports for convenience
 export const getClients = () => api.get('/clients');
 export const getClient = (id) => api.get(`/clients/${id}`);
