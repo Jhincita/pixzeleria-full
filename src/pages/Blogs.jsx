@@ -1,9 +1,12 @@
 // src/pages/Home.jsx
-import PixzaCup from "../assets/pixzacup.png";
-import PixzaTrophy from "../assets/pizzatrophies.jpg";
+
 import React from "react";
 
+const PixzaCup = "https://7f3a8e9d8e6f68a8be533b8e35df1c8f.r2.cloudflarestorage.com/pixzeleria/bigger_jpg/pixzacup.png";
+const PixzaTrophy = "https://7f3a8e9d8e6f68a8be533b8e35df1c8f.r2.cloudflarestorage.com/pixzeleria/bigger_jpg/pizzatrophies.jpg";
+
 export default function Home() {
+
     return <div>
         <div className={"blog-post"}>
             <h1>¡Gracias por Intentar!</h1>
