@@ -17,9 +17,10 @@ export default function Menu({ cart, setCart }) {
         async function fetchMenu() {
             try {
                 const response = await pizzaAPI.getAllPizzas();
-                setMenuItems(response.data);  // ✅ Access .data from Axios response
+                setMenuItems(response.data);  // ← Must use .data
             } catch (err) {
                 console.error("Failed to load menu:", err);
+                setMenuItems([]);
             } finally {
                 setLoading(false);
             }
