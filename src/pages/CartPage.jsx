@@ -25,35 +25,38 @@ export default function CartPage({ cart, setCart }) {
         (sum, item) => sum + item.price * item.quantity,
         0
     );
-    const handleCheckout = async () => {  // ← Make it async
+    const handleCheckout = async () => {
         setIsLoading(true);
 
         try {
-            // Prepare order data for backend
+            // Backend expects menuPizzaIds - array of pizza IDs
+            // For quantities > 1, repeat the ID
+            const menuPizzaIds = [];
+            cart.forEach(item => {
+                for (let i = 0; i < item.quantity; i++) {
+                    menuPizzaIds.push(item.id);
+                }
+            });
+
             const orderPayload = {
-                items: cart.map(item => ({
-                    pizzaId: item.id,
-                    name: item.name,
-                    quantity: item.quantity,
-                    price: item.price
-                })),
-                total: total,
-                timestamp: new Date().toISOString()
+                menuPizzaIds: menuPizzaIds  // ✅ This is what backend expects
             };
+
+            console.log("Sending order payload:", orderPayload);
 
             // Send to backend
             const response = await orderAPI.createOrder(orderPayload);
             console.log("Order created:", response.data);
 
-            // Set order data for confirmation screen
+            // Set order data for confirmation screen (use local cart data for display)
             setOrderData({
-                id: response.data.id,  // Order ID from backend
+                id: response.data.id,
                 items: [...cart],
                 total: total,
                 timestamp: new Date()
             });
 
-            setCart([]);  // Clear cart after successful order
+            setCart([]);
             setShowCheckout(true);
 
         } catch (error) {
