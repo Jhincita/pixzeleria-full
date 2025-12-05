@@ -1,6 +1,6 @@
 // src/App.jsx
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { Routes, Route } from "react-router-dom";
+import { useState } from "react";
 
 import Home from "./pages/Home";
 import Login from "./pages/Login";
@@ -21,7 +21,6 @@ import CartSvg from "./assets/navbar/cart.svg";
 import MenuSvg from "./assets/navbar/menu.svg";
 
 // Admin components
-import AdminLogin from "./components/auth/AdminLogin";
 import AdminPanel from "./pages/AdminPanel";
 
 import Window from "./components/Window";
@@ -32,9 +31,6 @@ export default function App() {
     const [User, setUser] = useState(null);
     const [cart, setCart] = useState([]);
 
-
-
-//pages.
     const pages = {
         home: {
             label: "HOME",
@@ -86,54 +82,48 @@ export default function App() {
         }
     };
 
-
-
-
     return (
-        <BrowserRouter basename="/pixzeleriaver2"> {/* ← AGREGAR ESTO */}
-            <Routes>
-                {/* Ruta principal */}
-                <Route path="/" element={
-                    <div className="page-wrapper">
-                        <header className="header">
-                            <h1>
-                                <img src="pixzeleria-logo.svg" alt="Pixzelería" />
-                            </h1>
-                        </header>
+        <Routes>
+            {/* Ruta principal */}
+            <Route path="/" element={
+                <div className="page-wrapper">
+                    <header className="header">
+                        <h1>
+                            <img src="pixzeleria-logo.svg" alt="Pixzelería" />
+                        </h1>
+                    </header>
 
-                        <p className="description">Pizzería en Pixeles</p>
+                    <p className="description">Pizzería en Pixeles</p>
 
-                        <nav className="window">
-                            <p className="window-title">Nav</p>
-                            <div className="container">
-                                {Object.keys(pages).map((key) => (
-                                    <button
-                                        key={key}
-                                        className="nav-button"
-                                        onClick={() => setOpenWindow(key)}
-                                    >
-                                        <img className="nav-icon" src={pages[key].icon} alt={key} />
-                                        <span className="nav-label">{pages[key].label}</span>
-                                    </button>
-                                ))}
+                    <nav className="window">
+                        <p className="window-title">Nav</p>
+                        <div className="container">
+                            {Object.keys(pages).map((key) => (
+                                <button
+                                    key={key}
+                                    className="nav-button"
+                                    onClick={() => setOpenWindow(key)}
+                                >
+                                    <img className="nav-icon" src={pages[key].icon} alt={key} />
+                                    <span className="nav-label">{pages[key].label}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </nav>
 
-                            </div>
-                        </nav>
+                    <Window
+                        title={openWindow ? openWindow.toUpperCase() : ""}
+                        isOpen={!!openWindow}
+                        onClose={() => setOpenWindow(null)}
+                        {...(openWindow ? pages[openWindow].windowProps : {})}
+                    >
+                        {openWindow && pages[openWindow].element}
+                    </Window>
+                </div>
+            } />
 
-                        <Window
-                            title={openWindow ? openWindow.toUpperCase() : ""}
-                            isOpen={!!openWindow}
-                            onClose={() => setOpenWindow(null)}
-                            {...(openWindow ? pages[openWindow].windowProps : {})}
-                        >
-                            {openWindow && pages[openWindow].element}
-                        </Window>
-                    </div>
-                } />
-
-                {/* Ruta del panel de administración */}
-                <Route path="/admin" element={<AdminPanel />} />
-            </Routes>
-        </BrowserRouter>
+            {/* Ruta del panel de administración */}
+            <Route path="/admin" element={<AdminPanel />} />
+        </Routes>
     );
 }

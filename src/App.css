@@ -1,5 +1,29 @@
 
 /* ================= NAVBAR ================= */
+.win98-outline-effect {
+    border: 2px solid black;
+    animation: outlineDraw 0.12s linear;
+}
+
+@keyframes outlineDraw {
+    0% {
+        clip-path: inset(50% 50% 50% 50%);
+    }
+    100% {
+        clip-path: inset(0% 0% 0% 0%);
+    }
+}
+
+.crt-pop {
+    animation: crtFlicker 0.09s steps(2, end);
+}
+
+@keyframes crtFlicker {
+    0% { filter: brightness(0.4); }
+    50% { filter: brightness(2); }
+    100% { filter: brightness(1); }
+}
+
 
 .container {
     display: flex;

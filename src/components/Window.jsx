@@ -1,5 +1,7 @@
 // src/components/Window.jsx
-import React from "react";
+import React, { useRef, useEffect, useState } from "react";
+
+import { useDrag } from "@use-gesture/react";
 import { useSpring, animated } from "@react-spring/web";
 
 export default function Window({
@@ -10,14 +12,56 @@ export default function Window({
                                    width = "420px",          // default small window
                                    maxWidth = "90vw"          // default safe limit
                                }) {
-    const styles = useSpring({
-        y: isOpen ? 0 : -40,
-        opacity: isOpen ? 1 : 0,
-        scale: isOpen ? 1 : 0.96,
-        config: { tension: 160, friction: 20 }
-    });
+    const [styles, api] = useSpring(() => ({
+        from: { opacity: 0, scale: 0.3 },
+    }));
 
-    if (!isOpen) return null;
+    // keep the element mounted until the closing animation ends
+    const [visible, setVisible] = useState(isOpen);
+    const wrapperRef = useRef(null);
+
+    useEffect(() => {
+        if (isOpen) {
+            // ensure mounted, then play open animation
+            setVisible(true);
+            (async () => {
+                await api.start({ opacity: 1, scale: 1.05, config: { duration: 90 } });
+                await api.start({ scale: 1, config: { duration: 80 } });
+            })();
+        } else if (visible) {
+            // play close animation, then unmount
+            api.start({
+                opacity: 0,
+                scale: 0.3,
+                config: { duration: 120 },
+                onRest: () => setVisible(false),
+            });
+        }
+
+
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isOpen]);
+
+
+    // cerrar on click away del cmponent
+    useEffect(() => {
+        function handleClickOutside(e) {
+            if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
+                onClose?.();
+            }
+        }
+        if (visible) {
+            document.addEventListener("mousedown", handleClickOutside);
+            document.addEventListener("touchstart", handleClickOutside);
+        }
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+            document.removeEventListener("touchstart", handleClickOutside);
+        };
+    }, [visible, onClose]);
+
+
+    if (!visible) return null;
 
     return (
         <div
@@ -34,22 +78,20 @@ export default function Window({
                 maxHeight: "90vh",
             }}
         >
-            <animated.div
-                style={{
-                    transform: styles.y
-                        .to((y) => `translateY(${y}px)`)
-                        .to((t) => `${t}`),
-                    scale: styles.scale,
-                    opacity: styles.opacity,
-                    willChange: "transform, opacity",
-                }}
+            <animated.div ref={wrapperRef} className="win98-outline-effect crt-pop"
+                          style={{
+                              transform: styles.scale.to(s => `scale(${s})`),
+                              opacity: styles.opacity,
+                              willChange: "transform, opacity",
+                          }}
             >
-                <div
+
+            <div
                     style={{
                         display: "flex",
                         flexDirection: "column",
                         background: "white",
-                        borderRadius: "12px",
+                        borderRadius: "0px",
                         overflow: "hidden",
                         boxShadow: "0 10px 30px rgba(0,0,0,0.3)",
                         height: "100%",

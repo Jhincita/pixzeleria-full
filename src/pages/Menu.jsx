@@ -1,31 +1,44 @@
 import "./Menu.css";
 import MenuImage from "../components/MenuImage";
+import PixelHoverImage from "../components/PixelHoverImage";
 
-// importacion de imgs
-import ProsciuttoPistacchio from "../assets/menuimg/prosciuttopistaccio.png";
-import ProsciuttoPistacchioPixel from "../assets/menuimg_hover/prosciuttopistaccio.png";
-
-import PizzaPepperoni from "../assets/menuimg/pepperoni.png";
-import Prosciutto from "../assets/menuimg/prosciuttorugula.png";
-
-
-import Pizzamargherita from "../assets/menuimg/pizzamargherita.png";
-import PizzamargheritaPixel from "../assets/menuimg_hover/pizzamargherita.png";
-
-import PizzaDatterini from "../assets/menuimg/pizzadatterini.png";
-import PizzaBuffalina from "../assets/menuimg/pizzabuffalina.png";
+import { useEffect, useState } from "react";
 
 export default function Menu({ cart, setCart }) {
 
+    const [menuItems, setMenuItems] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    const [selectedItem, setSelectedItem] = useState(null);
+
+
+    useEffect(() => {
+        async function fetchMenu() {
+            try {
+                const response = await fetch("http://localhost:8080/api/pizzas");
+                const data = await response.json();
+                setMenuItems(data);
+            } catch (err) {
+                console.error("Failed to load menu:", err);
+            } finally {
+                setLoading(false);
+            }
+        }
+        fetchMenu();
+    }, []);
+
+    // menu hardcodeado , editar
+/*
     const menuItems = [
-        { id: 1, name: "Pizza Margherita", price: 8000 , img: Pizzamargherita, pixelImg: PizzamargheritaPixel },
-        {id: 2, name: "Pizza Prosciutto", price: 10000 , img: ProsciuttoPistacchio, pixelImg: ProsciuttoPistacchioPixel },
-        {id: 3, name: "Pizza Pepperoni", price: 9000 , img: PizzaPepperoni },
-        {id: 4, name: "Pizza Prosciutto", price: 10000 , img: Prosciutto },
-        {id: 5, name: "Pizza Datterini", price: 9000 , img: PizzaDatterini },
-        {id: 6, name: "Pizza Buffalina", price: 10000 , img: PizzaBuffalina },
+        {id: 1, name: "Pizza Margherita", price: 8000, img: Pizzamargherita, pixelImg: PizzamargheritaPixel},
+        {id: 2, name: "Pizza Prosciutto", price: 10000, img: ProsciuttoPistacchio, pixelImg: ProsciuttoPistacchioPixel},
+        {id: 3, name: "Pizza Pepperoni", price: 9000, img: PizzaPepperoni},
+        {id: 4, name: "Pizza Prosciutto", price: 10000, img: Prosciutto},
+        {id: 5, name: "Pizza Datterini", price: 9000, img: PizzaDatterini},
+        {id: 6, name: "Pizza Buffalina", price: 10000, img: PizzaBuffalina},
 
     ];
+*/
 
 
     const addToCart = (item) => {
@@ -63,15 +76,16 @@ export default function Menu({ cart, setCart }) {
         const item = cart.find(pizza => pizza.id === id);
         return item ? item.quantity : 0;
     };
+    if (loading) return <p>Loading menu...</p>;
     return (
         <div>
             <h2>Menú de Pizzas</h2>
             <ul className="menu-list">
                 {menuItems.map((item) => (
-                    <li key={item.id} className="menu-item">
+                    <li key={item.id} className="menu-item" onClick={() => setSelectedItem(item)}  >
                         <MenuImage
-                            normalSrc={item.img}
-                            pixelSrc={item.pixelImg || item.img} // fallback if no pixel version
+                            normalSrc={item.imageUrl}
+                            pixelSrc={item.imageUrl}
                             alt={item.name}
                         />
                         <div>
@@ -80,25 +94,54 @@ export default function Menu({ cart, setCart }) {
                             <div className="buttons">
                                 <button
                                     className="buttons-minus"
-                                    onClick={() => decreaseFromCart(item)}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        decreaseFromCart(item);
+                                    }}
                                 >
                                     -
                                 </button>
 
-                                <span className="quantity">{getQuantity(item.id)}</span>
-
                                 <button
                                     className="button-plus"
-                                    onClick={() => addToCart(item)}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        addToCart(item);
+                                    }}
                                 >
                                     +
                                 </button>
+
                             </div>
                         </div>
                     </li>
 
                 ))}
             </ul>
+
+            {selectedItem && (
+                <div className="detail-overlay" onClick={() => setSelectedItem(null)}>
+                    <div className="detail-window" onClick={(e) => e.stopPropagation()}>
+                        <img src={selectedItem.imageUrl} className="detail-img" />
+
+                        <h2>{selectedItem.name}</h2>
+
+                        {selectedItem.ingredients?.length > 0 && (
+                            <ul>
+                                {selectedItem.ingredients.map((i) => (
+                                    <li key={i.id}>{i.name}</li>
+                                ))}
+                            </ul>
+                        )}
+
+                        <h3>${selectedItem.price}</h3>
+
+                        <button onClick={() => addToCart(selectedItem)}>Add to Cart</button>
+                        <button onClick={() => setSelectedItem(null)}>Close</button>
+                    </div>
+                </div>
+            )}
+
         </div>
     );
 }
