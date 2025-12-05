@@ -1,5 +1,6 @@
 import "./Menu.css";
 import MenuImage from "../components/MenuImage";
+import { pizzaAPI } from "../services/api.js";
 import PixelHoverImage from "../components/PixelHoverImage";
 
 import { useEffect, useState } from "react";
@@ -15,7 +16,7 @@ export default function Menu({ cart, setCart }) {
     useEffect(() => {
         async function fetchMenu() {
             try {
-                const response = await fetch("http://localhost:8080/api/pizzas");
+                const response = await pizzaAPI.getAllPizzas();
                 const data = await response.json();
                 setMenuItems(data);
             } catch (err) {
