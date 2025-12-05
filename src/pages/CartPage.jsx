@@ -4,11 +4,6 @@ import CheckoutResult from "./CheckoutResult";
 
 import { orderAPI } from "../services/api.js";
 // Order API
-export const orderAPI = {
-    createOrder: (orderData) => api.post('/orders', orderData),
-    getAllOrders: () => api.get('/orders'),
-    getOrderById: (id) => api.get(`/orders/${id}`),
-};
 
 export default function CartPage({ cart, setCart }) {
     const [showCheckout, setShowCheckout] = useState(false);
