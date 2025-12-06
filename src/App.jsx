@@ -27,6 +27,7 @@ import Window from "./components/Window";
 import './App.css';
 
 export default function App() {
+    const navigate = useNavigate();
     const [openWindow, setOpenWindow] = useState(null);
     const [User, setUser] = useState(null);
     const [cart, setCart] = useState([]);
@@ -138,6 +139,17 @@ export default function App() {
                                     </button>
                                 );
                             })}
+
+                            {User && User.role === 'ADMIN' && (
+                                <button 
+                                    className="nav-button" // Usé nav-button para que se alinee bien
+                                    style={{ backgroundColor: '#6f42c1', color: 'white', fontWeight: 'bold' }} 
+                                    onClick={() => navigate('/admin')}
+                                >
+                                    <span style={{fontSize: '20px'}}></span>
+                                    <span className="nav-label">ADMIN</span>
+                                </button>
+                            )}
 
                             {/* Botón SALIR */}
                             {User && (
