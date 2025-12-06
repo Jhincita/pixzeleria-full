@@ -3,63 +3,19 @@ import AdminSidebar from './AdminSidebar';
 import AdminHeader from './AdminHeader';
 import '../../styles/AdminPanel.css'
 
-const AdminLayout = ({ children, activeSection, onSectionChange }) => {
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [adminUser, setAdminUser] = useState(null);
-
-  useEffect(() => {
-    const isLoggedIn = sessionStorage.getItem('adminLoggedIn');
-    const user = sessionStorage.getItem('adminUser');
-
-    if (!isLoggedIn || isLoggedIn !== 'true') {
-      // Redirige al login si no hay sesión
-      window.location.href = '/';
-    } else {
-      setAdminUser(JSON.parse(user));
-    }
-  }, []);
-
-  const handleLogout = () => {
-    if (window.confirm('¿Estás seguro de que quieres cerrar sesión?')) {
-      sessionStorage.removeItem('adminLoggedIn');
-      sessionStorage.removeItem('adminUser');
-      window.location.href = '/';
-    }
-  };
-
-  const toggleSidebar = () => {
-    setIsSidebarCollapsed(!isSidebarCollapsed);
-  };
-
-  if (!adminUser) {
-    return (
-      <div className="admin-loading">
-        <i className="fas fa-spinner fa-spin"></i>
-        <p>Cargando...</p>
-      </div>
-    );
-  }
-
+const AdminLayout = ({ children, activeSection, setActiveSection }) => {
   return (
-    <div className="admin-container">
-      <AdminSidebar
-        isCollapsed={isSidebarCollapsed}
-        activeSection={activeSection}
-        onSectionChange={onSectionChange}
-        onLogout={handleLogout}
-      />
+    <div className="admin-layout" style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f4f6f9' }}>
+      {/* Barra Lateral */}
+      <AdminSidebar activeSection={activeSection} setActiveSection={setActiveSection} />
 
-      <main className={`admin-main ${isSidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
-        <AdminHeader
-          adminUser={adminUser}
-          activeSection={activeSection}
-          onToggleSidebar={toggleSidebar}
-        />
-
-        <div className="admin-content">
+      {/* Contenido Principal */}
+      <div className="admin-content" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+        <AdminHeader />
+        <main style={{ padding: '20px', overflowY: 'auto' }}>
           {children}
-        </div>
-      </main>
+        </main>
+      </div>
     </div>
   );
 };
