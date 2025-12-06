@@ -1,32 +1,39 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import AdminLayout from '../components/admin/AdminLayout';
 import Dashboard from '../components/admin/Dashboard';
+import OrdersSection from '../components/admin/OrdersSection';
+import ProductsSection from '../components/admin/ProductsSection';
+import UsersSection from '../components/admin/UsersSection';
+import ReportsSection from '../components/admin/ReportsSection';
 
 const AdminPanel = () => {
   const [activeSection, setActiveSection] = useState('dashboard');
+  const [token, setToken] = useState('');
+
+  useEffect(() => {
+    const storedToken = sessionStorage.getItem('token');
+    setToken(storedToken);
+  }, []);
 
   const renderSection = () => {
     switch (activeSection) {
       case 'dashboard':
-        return <Dashboard />;
-      case 'products':
-        return <div>Gestión de Productos (próximamente)</div>;
-      case 'users':
-        return <div>Gestión de Usuarios (próximamente)</div>;
+        return <Dashboard token={token} />;
       case 'orders':
-        return <div>Gestión de Órdenes (próximamente)</div>;
+        return <OrdersSection token={token} />;
+      case 'products':
+        return <ProductsSection token={token} />;
+      case 'users':
+        return <UsersSection token={token} />;
       case 'reports':
-        return <div>Reportes (próximamente)</div>;
+        return <ReportsSection token={token} />;
       default:
-        return <Dashboard />;
+        return <Dashboard token={token} />;
     }
   };
 
   return (
-    <AdminLayout
-      activeSection={activeSection}
-      onSectionChange={setActiveSection}
-    >
+    <AdminLayout activeSection={activeSection} setActiveSection={setActiveSection}>
       {renderSection()}
     </AdminLayout>
   );
