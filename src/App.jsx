@@ -146,7 +146,7 @@ export default function App() {
                                     style={{ backgroundColor: '#6f42c1', color: 'white', fontWeight: 'bold' }} 
                                     onClick={() => navigate('/admin')}
                                 >
-                                    <span style={{fontSize: '20px'}}></span>
+                                    <span style={{fontSize: '20px'}}>🛠️</span>
                                     <span className="nav-label">ADMIN</span>
                                 </button>
                             )}
