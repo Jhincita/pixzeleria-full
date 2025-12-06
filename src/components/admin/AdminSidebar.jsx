@@ -1,58 +1,63 @@
-const AdminSidebar = ({ isCollapsed, activeSection, onSectionChange, onLogout }) => {
+import { useNavigate } from 'react-router-dom';
+
+const AdminSidebar = ({ activeSection, setActiveSection }) => {
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    sessionStorage.clear();
+    navigate('/');
+  };
+
   const menuItems = [
-    {
-      id: 'dashboard',
-      label: 'Dashboard',
-      icon: 'fas fa-home'
-    },
-    {
-      id: 'products',
-      label: 'Gestión de Productos',
-      icon: 'fas fa-pizza-slice'
-    },
-    {
-      id: 'users',
-      label: 'Gestión de Usuarios',
-      icon: 'fas fa-users'
-    },
-    {
-      id: 'orders',
-      label: 'Gestión de Órdenes',
-      icon: 'fas fa-shopping-cart'
-    },
-    {
-      id: 'reports',
-      label: 'Reportes',
-      icon: 'fas fa-chart-bar'
-    }
+    { id: 'dashboard', label: 'Dashboard' },
+    { id: 'orders', label: 'Pedidos' },
+    { id: 'products', label: 'Productos' },
+    { id: 'users', label: 'Usuarios' },
+    { id: 'reports', label: 'Reportes' },
   ];
 
   return (
-    <aside className={`admin-sidebar ${isCollapsed ? 'collapsed' : ''}`}>
-      <div className="sidebar-header">
-        <h1>Pixzelería</h1>
-        {!isCollapsed && <p>Panel de Administración</p>}
+    <aside className="admin-sidebar" style={{ width: '250px', backgroundColor: '#2c3e50', color: 'white', display: 'flex', flexDirection: 'column' }}>
+      <div className="sidebar-header" style={{ padding: '20px', borderBottom: '1px solid #34495e' }}>
+        <h2 style={{ margin: 0, fontSize: '1.2em' }}>Admin Panel</h2>
       </div>
 
-      <nav className="sidebar-nav">
-        <ul>
-          {menuItems.map(item => (
-            <li
-              key={item.id}
-              className={`nav-item ${activeSection === item.id ? 'active' : ''}`}
-              onClick={() => onSectionChange(item.id)}
-            >
-              <i className={item.icon}></i>
-              {!isCollapsed && <span>{item.label}</span>}
+      <nav className="sidebar-nav" style={{ flex: 1, padding: '20px 0' }}>
+        <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+          {menuItems.map((item) => (
+            <li key={item.id}>
+              <button
+                onClick={() => setActiveSection(item.id)}
+                style={{
+                  width: '100%',
+                  padding: '15px 20px',
+                  textAlign: 'left',
+                  background: activeSection === item.id ? '#34495e' : 'transparent',
+                  color: 'white',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  fontSize: '1em'
+                }}
+              >
+                <span>{item.icon}</span>
+                {item.label}
+              </button>
             </li>
           ))}
-
-          <li className="nav-item logout-btn" onClick={onLogout}>
-            <i className="fas fa-sign-out-alt"></i>
-            {!isCollapsed && <span>Cerrar Sesión</span>}
-          </li>
         </ul>
       </nav>
+
+      <div className="sidebar-footer" style={{ padding: '20px', borderTop: '1px solid #34495e' }}>
+        <button 
+          onClick={handleLogout}
+          style={{ width: '100%', padding: '10px', background: '#c0392b', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+        >
+          Cerrar Sesión
+        </button>
+      </div>
     </aside>
   );
 };
