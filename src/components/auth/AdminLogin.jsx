@@ -3,7 +3,7 @@ import '../../styles/AdminLogin.css';
 
 const AdminLogin = ({ onLoginSuccess }) => {
   const [formData, setFormData] = useState({
-    email: '',
+    username: '', // Cambiamos email por username (tu backend usa username)
     password: ''
   });
   const [errors, setErrors] = useState({});
@@ -15,69 +15,72 @@ const AdminLogin = ({ onLoginSuccess }) => {
       ...prev,
       [name]: value
     }));
-    if (errors[name]) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: ''
-      }));
+    if (errors[name] || errors.general) {
+      setErrors(prev => ({ ...prev, [name]: '', general: '' }));
     }
   };
 
   const validateForm = () => {
     const newErrors = {};
-
-    if (!formData.email) {
-      newErrors.email = 'El email es obligatorio';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'El formato del email no es válido.';
+    if (!formData.username) newErrors.username = 'El usuario es obligatorio';
+    if (!formData.password) newErrors.password = 'La contraseña es obligatoria';
+    if (!editingUser) {
+        if (!formData.password) errors.password = 'La contraseña es requerida';
     }
-
-    if (!formData.password) {
-      newErrors.password = 'La contraseña es obligatoria';
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'La contraseña debe tener al menos 6 caracteres';
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!validateForm()) {
-      return;
-    }
+    if (!validateForm()) return;
 
     setIsLoading(true);
 
-    setTimeout(() => {
-      const users = JSON.parse(localStorage.getItem('pixeleriaUsers')) || [];
-      const admin = users.find(
-        user => user.email === formData.email && 
-        user.password === formData.password && 
-        user.role === 'admin'
-      );
+    try {
+      // 1. LLAMADA AL BACKEND REAL 🚀
+      // Asegúrate de que el puerto sea el correcto (8080 o 8085)
+      const response = await fetch('http://localhost:8080/api/v1/auth/authenticate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          username: formData.username,
+          password: formData.password
+        })
+      });
 
-      if (admin) {
+      const data = await response.json();
+
+      if (response.ok) {
+        // Guardamos el token
+        // El backend devuelve { token: "..." }
         sessionStorage.setItem('adminLoggedIn', 'true');
+        sessionStorage.setItem('token', data.token); // Guardamos el token vital
         sessionStorage.setItem('adminUser', JSON.stringify({
-          name: admin.name,
-          email: admin.email,
-          role: admin.role
+            username: formData.username,
+            role: 'ADMIN' // Asumimos admin si logró entrar
         }));
-        
+
         if (onLoginSuccess) {
           onLoginSuccess();
         }
       } else {
+        // Error de credenciales
         setErrors({
-          general: 'Credenciales incorrectas o usuario sin permisos de administrador'
+          general: 'Usuario o contraseña incorrectos'
         });
       }
-      
+    } catch (error) {
+      // Se apagó el backend
+      console.error("Error conectando:", error);
+      setErrors({
+        general: 'Error de conexión con el servidor. Revisa que el backend esté corriendo.'
+      });
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   return (
@@ -91,34 +94,30 @@ const AdminLogin = ({ onLoginSuccess }) => {
         <div className="login-form">
           {errors.general && (
             <div className="alert alert-error">
-              <i className="fas fa-exclamation-circle"></i>
-              {errors.general}
+              <i className="fas fa-exclamation-circle"></i> {errors.general}
             </div>
           )}
 
+          {/* Input de username en vez de email */}
           <div className="form-group">
-            <label htmlFor="email">
-              <i className="fas fa-envelope"></i>
-              Email
+            <label htmlFor="username">
+              <i className="fas fa-user"></i> Usuario
             </label>
             <input
-              type="email"
-              id="email"
-              name="email"
-              value={formData.email}
+              type="text"
+              id="username"
+              name="username"
+              value={formData.username}
               onChange={handleChange}
-              placeholder="admin@pixzeleria.com"
-              className={errors.email ? 'input-error' : ''}
+              placeholder="Ej: admin"
+              className={errors.username ? 'input-error' : ''}
             />
-            {errors.email && (
-              <span className="error-message">{errors.email}</span>
-            )}
+            {errors.username && <span className="error-message">{errors.username}</span>}
           </div>
 
           <div className="form-group">
             <label htmlFor="password">
-              <i className="fas fa-lock"></i>
-              Contraseña
+              <i className="fas fa-lock"></i> Contraseña
             </label>
             <input
               type="password"
@@ -129,9 +128,7 @@ const AdminLogin = ({ onLoginSuccess }) => {
               placeholder="••••••••"
               className={errors.password ? 'input-error' : ''}
             />
-            {errors.password && (
-              <span className="error-message">{errors.password}</span>
-            )}
+            {errors.password && <span className="error-message">{errors.password}</span>}
           </div>
 
           <button 
@@ -139,25 +136,8 @@ const AdminLogin = ({ onLoginSuccess }) => {
             className="btn btn-primary btn-full"
             disabled={isLoading}
           >
-            {isLoading ? (
-              <>
-                <i className="fas fa-spinner fa-spin"></i>
-                Iniciando sesión...
-              </>
-            ) : (
-              <>
-                <i className="fas fa-sign-in-alt"></i>
-                Iniciar Sesión
-              </>
-            )}
+            {isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
           </button>
-        </div>
-
-        <div className="login-footer">
-          <a href="/" className="back-link">
-            <i className="fas fa-arrow-left"></i>
-            Volver a la página principal
-          </a>
         </div>
       </div>
     </div>
