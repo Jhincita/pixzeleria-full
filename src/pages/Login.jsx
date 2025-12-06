@@ -1,16 +1,15 @@
+// src/pages/Login.jsx
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom"; // If using React Router
 import { authAPI } from "../services/api";
 import Signup from "./Signup";
 import Window from "../components/Window";
 
-export default function Login() {
+export default function Login({ User, setUser }) {
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [errors, setErrors] = useState({ username: "", password: "", general: "" });
     const [openWindow, setOpenWindow] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
-    // const navigate = useNavigate(); // Uncomment if using React Router
 
     const renderWindowContent = () => {
         switch (openWindow) {
@@ -25,7 +24,6 @@ export default function Login() {
         e.preventDefault();
         setIsLoading(true);
 
-        // Validation
         const newErrors = { username: "", password: "", general: "" };
         if (!username) newErrors.username = "El nombre de usuario es obligatorio.";
         if (!password) newErrors.password = "La contraseña es obligatoria.";
@@ -38,47 +36,37 @@ export default function Login() {
         }
 
         try {
-            // Call backend login endpoint
             const response = await authAPI.login({
                 username: username,
                 password: password
             });
 
-            // Save token to localStorage
             const token = response.data.token;
             localStorage.setItem('token', token);
+            
+            const userData = {
+                username: response.data.username,
+                firstName: response.data.firstName,
+                role: response.data.role 
+            };
+            
+            localStorage.setItem('user', JSON.stringify(userData));
 
-            // Optionally save user info
-            localStorage.setItem('user', JSON.stringify({ username }));
+            console.log("Datos guardados:", userData); 
+            alert("¡Inicio de sesión pixi-exitoso! ✨");
 
-            console.log("Login successful!", response.data);
-            alert("¡Inicio de sesión exitoso! ✨");
-
-            // Redirect to home or dashboard
-            // navigate('/'); // Uncomment if using React Router
-            window.location.href = '/'; // Or use this for simple redirect
+            window.location.href = '/'; 
 
         } catch (error) {
             console.error("Login error:", error);
-
             if (error.response) {
-                // Backend returned an error
                 if (error.response.status === 401 || error.response.status === 403) {
-                    setErrors({
-                        ...newErrors,
-                        general: "Usuario o contraseña incorrectos"
-                    });
+                    setErrors({ ...newErrors, general: "Usuario o contraseña incorrectos" });
                 } else {
-                    setErrors({
-                        ...newErrors,
-                        general: "Error al iniciar sesión. Intenta de nuevo."
-                    });
+                    setErrors({ ...newErrors, general: "Error al iniciar sesión. Estás soñando, intenta de nuevo." });
                 }
             } else {
-                setErrors({
-                    ...newErrors,
-                    general: "Error de conexión. Verifica que el servidor esté corriendo."
-                });
+                setErrors({ ...newErrors, general: "Error de conexión. Estás soñando, verifica que el servidor esté corriendo." });
             }
         } finally {
             setIsLoading(false);
@@ -89,74 +77,36 @@ export default function Login() {
         <div className="form-wrapper">
             <form className="auth-form" onSubmit={handleSubmit}>
                 {errors.general && (
-                    <div className="error-message general-error" style={{
-                        color: 'red',
-                        marginBottom: '15px',
-                        padding: '10px',
-                        border: '2px solid red',
-                        backgroundColor: '#ffe6e6'
-                    }}>
+                    <div className="error-message general-error" style={{ color: 'red', marginBottom: '15px', padding: '10px', border: '2px solid red', backgroundColor: '#ffe6e6' }}>
                         {errors.general}
                     </div>
                 )}
 
                 <div className="form-group">
                     <label htmlFor="username">Nombre de usuario:</label>
-                    <input
-                        type="text"
-                        id="username"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                        maxLength={100}
-                        disabled={isLoading}
-                        required
-                    />
-                    {errors.username && (
-                        <div className="error-message">{errors.username}</div>
-                    )}
+                    <input type="text" id="username" value={username} onChange={(e) => setUsername(e.target.value)} maxLength={100} disabled={isLoading} required />
+                    {errors.username && <div className="error-message">{errors.username}</div>}
                 </div>
 
                 <div className="form-group">
                     <label htmlFor="password">Contraseña:</label>
-                    <input
-                        type="password"
-                        id="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        minLength={4}
-                        maxLength={10}
-                        disabled={isLoading}
-                        required
-                    />
-                    {errors.password && (
-                        <div className="error-message">{errors.password}</div>
-                    )}
+                    <input type="password" id="password" value={password} onChange={(e) => setPassword(e.target.value)} minLength={4} maxLength={10} disabled={isLoading} required />
+                    {errors.password && <div className="error-message">{errors.password}</div>}
                 </div>
 
-                <button
-                    type="submit"
-                    className="pixel-button"
-                    disabled={isLoading}
-                >
+                <button type="submit" className="pixel-button" disabled={isLoading}>
                     {isLoading ? "Ingresando..." : "Ingresar"}
                 </button>
             </form>
 
             <p>
                 ¿No tienes cuenta?{" "}
-                <span
-                    style={{ color: "blue", cursor: "pointer" }}
-                    onClick={() => setOpenWindow("signup")}
-                >
+                <span style={{ color: "blue", cursor: "pointer" }} onClick={() => setOpenWindow("signup")}>
                     Regístrate aquí
                 </span>
             </p>
 
-            <Window
-                title={openWindow ? openWindow.toUpperCase() : ""}
-                isOpen={!!openWindow}
-                onClose={() => setOpenWindow(null)}
-            >
+            <Window title={openWindow ? openWindow.toUpperCase() : ""} isOpen={!!openWindow} onClose={() => setOpenWindow(null)}>
                 {renderWindowContent()}
             </Window>
         </div>
