@@ -1,38 +1,13 @@
-const AdminHeader = ({ adminUser, activeSection, onToggleSidebar }) => {
-  const getSectionTitle = (section) => {
-    const titles = {
-      dashboard: 'Dashboard',
-      products: 'Gestión de Productos',
-      users: 'Gestión de Usuarios',
-      orders: 'Gestión de Órdenes',
-      reports: 'Reportes'
-    };
-    return titles[section] || 'Panel de Administración';
-  };
-
-  const getInitials = (name) => {
-    if (!name) return 'AD';
-    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-  };
+const AdminHeader = () => {
+  const user = JSON.parse(sessionStorage.getItem('user')) || { username: 'Admin' };
 
   return (
-    <header className="admin-header">
-      <div className="header-left">
-        <button className="toggle-sidebar" onClick={onToggleSidebar}>
-          <i className="fas fa-bars"></i>
-        </button>
-        <h2>{getSectionTitle(activeSection)}</h2>
-      </div>
-
-      <div className="header-right">
-        <div className="admin-user">
-          <div className="user-avatar">
-            {getInitials(adminUser?.name)}
-          </div>
-          <div className="user-info">
-            <span className="user-name">{adminUser?.name || 'Administrador'}</span>
-            <span className="user-role">{adminUser?.role || 'admin'}</span>
-          </div>
+    <header style={{ background: 'white', padding: '15px 20px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <h3 style={{ margin: 0, color: '#333' }}>Pixzelería Management</h3>
+      <div className="user-info" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <span style={{ fontWeight: 'bold' }}>Hola, {user.username}</span>
+        <div style={{ width: '35px', height: '35px', borderRadius: '50%', background: '#3498db', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {user.username.charAt(0).toUpperCase()}
         </div>
       </div>
     </header>
