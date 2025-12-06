@@ -1,6 +1,6 @@
-// src/App.jsx
 import { Routes, Route } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { authAPI } from "./services/api";
 
 import Home from "./pages/Home";
 import Login from "./pages/Login";
@@ -30,6 +30,27 @@ export default function App() {
     const [openWindow, setOpenWindow] = useState(null);
     const [User, setUser] = useState(null);
     const [cart, setCart] = useState([]);
+
+    // 1. Efecto de Memoria: Revisa si hay usuario al cargar
+    useEffect(() => {
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+            try {
+                setUser(JSON.parse(storedUser));
+            } catch (error) {
+                console.error("Error recuperando sesión", error);
+                localStorage.removeItem('user');
+            }
+        }
+    }, []);
+
+    // 2. Función de Salir
+    const handleLogout = () => {
+        authAPI.logout();
+        setUser(null);
+        setOpenWindow(null); 
+        alert("¡Nos vemos pronto!");
+    };
 
     const pages = {
         home: {
@@ -96,18 +117,39 @@ export default function App() {
                     <p className="description">Pizzería en Pixeles</p>
 
                     <nav className="window">
-                        <p className="window-title">Nav</p>
+                        {/* Título dinámico */}
+                        <p className="window-title">
+                            {User ? `Hola, ${User.username || User.firstName}!` : "Nav"}
+                        </p>
+                        
                         <div className="container">
-                            {Object.keys(pages).map((key) => (
-                                <button
-                                    key={key}
-                                    className="nav-button"
-                                    onClick={() => setOpenWindow(key)}
+                            {Object.keys(pages).map((key) => {
+                                // Ocultar LOGIN si ya hay usuario
+                                if (key === 'login' && User) return null;
+
+                                return (
+                                    <button
+                                        key={key}
+                                        className="nav-button"
+                                        onClick={() => setOpenWindow(key)}
+                                    >
+                                        <img className="nav-icon" src={pages[key].icon} alt={key} />
+                                        <span className="nav-label">{pages[key].label}</span>
+                                    </button>
+                                );
+                            })}
+
+                            {/* Botón SALIR */}
+                            {User && (
+                                <button 
+                                    className="nav-button" 
+                                    onClick={handleLogout}
+                                    style={{backgroundColor: '#ffe6e6'}}
                                 >
-                                    <img className="nav-icon" src={pages[key].icon} alt={key} />
-                                    <span className="nav-label">{pages[key].label}</span>
+                                    <span style={{fontSize: '24px', display: 'block'}}>🚪</span>
+                                    <span className="nav-label">SALIR</span>
                                 </button>
-                            ))}
+                            )}
                         </div>
                     </nav>
 
@@ -119,6 +161,7 @@ export default function App() {
                     >
                         {openWindow && pages[openWindow].element}
                     </Window>
+
                 </div>
             } />
 
