@@ -156,9 +156,8 @@ export default function App() {
                                 <button 
                                     className="nav-button" 
                                     onClick={handleLogout}
-                                    style={{backgroundColor: '#ffe6e6'}} // Fondo rojo clarito
+                                    style={{backgroundColor: 'red'}} 
                                 >
-                                    {/* Usamos el icono SVG en vez del emoji */}
                                     <img className="nav-icon" src={LoginSvg} alt="Salir" />
                                     <span className="nav-label">LOG OUT</span>
                                 </button>
