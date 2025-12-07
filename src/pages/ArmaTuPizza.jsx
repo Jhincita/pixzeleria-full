@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from 'react-router-dom';
-import api from '../services/api'; 
+import api from '../services/api';
+
 
 const DEFAULT_INGREDIENTS = [
   { id: "salsa-roja", name: "Salsa de Tomate", price: 500, max: 1, color: "#DC2626", image: "/src/assets/salsatomate.png", type: "salsa", stock: 99 },
@@ -12,6 +13,7 @@ const DEFAULT_INGREDIENTS = [
   { id: "piña", name: "Piña", price: 250, max: 5, image: "/src/assets/piña.png", type: "topping", stock: 99 },
 ];
 
+// Diccionario para mapear nombres del backend a tus imágenes
 const IMAGE_MAP = {
   "Salsa de Tomate": "/src/assets/salsatomate.png",
   "Salsa BBQ": "/src/assets/salsa_bbq.png",
@@ -26,6 +28,7 @@ export default function ArmaTuPizza({ cart, setCart }) {
   const navigate = useNavigate();
   const canvasRef = useRef(null);
   
+  // --- ESTADOS ---
   const [availableIngredients, setAvailableIngredients] = useState(DEFAULT_INGREDIENTS);
   const [ingredients, setIngredients] = useState([]); 
   const [totalPrice, setTotalPrice] = useState(5000);
@@ -62,7 +65,6 @@ export default function ArmaTuPizza({ cart, setCart }) {
             });
             
             const toppingsOnly = mergedData.filter(i => i.name !== "Masa Tradicional" && i.image);
-            
             setAvailableIngredients(toppingsOnly);
 
         } catch (err) {
@@ -102,16 +104,24 @@ export default function ArmaTuPizza({ cart, setCart }) {
     setLoadedImages(images);
   }, [availableIngredients]);
 
-  const drawPixelCircle = (ctx, x, y, radius, fillColor, borderColor = null, borderWidth = 0) => {
+  
+  // Función original para dibujar cuadrados pixelados
+  const drawPixelSquare = (ctx, x, y, size, fillColor, borderColor = null, borderWidth = 0) => {
     const pixelSize = 4;
-    for (let i = -radius; i < radius; i += pixelSize) {
-      for (let j = -radius; j < radius; j += pixelSize) {
-        const distance = Math.sqrt(i * i + j * j);
-        if (distance <= radius) {
-          ctx.fillStyle = borderColor && distance > radius - borderWidth ? borderColor : fillColor;
-          ctx.fillRect(x + i, y + j, pixelSize, pixelSize);
+    const half = size / 2;
+
+    for (let i = -half; i < half; i += pixelSize) {
+        for (let j = -half; j < half; j += pixelSize) {
+            const isBorder =
+                borderColor &&
+                (i < -half + borderWidth ||
+                    i > half - borderWidth - pixelSize ||
+                    j < -half + borderWidth ||
+                    j > half - borderWidth - pixelSize);
+
+            ctx.fillStyle = isBorder ? borderColor : fillColor;
+            ctx.fillRect(x + i, y + j, pixelSize, pixelSize);
         }
-      }
     }
   };
 
@@ -122,19 +132,21 @@ export default function ArmaTuPizza({ cart, setCart }) {
     const ctx = canvas.getContext("2d");
     const centerX = canvas.width / 2;
     const centerY = canvas.height / 2;
-    const radius = 150;
 
     ctx.imageSmoothingEnabled = false;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    drawPixelCircle(ctx, centerX, centerY, radius, "#F59E0B", "#D97706", 8);
+    // BASE CUADRADA
+    drawPixelSquare(ctx, centerX, centerY, 260, "#F59E0B", "#D97706", 12);
 
+    // SALSA (Cuadrada un poco más chica)
     const salsaIngredient = ingredients.find((i) => i.type === "salsa");
     if (salsaIngredient) {
       const originalData = availableIngredients.find(a => a.id === salsaIngredient.id);
-      drawPixelCircle(ctx, centerX, centerY, radius - 15, originalData?.color || "#DC2626");
+      drawPixelSquare(ctx, centerX, centerY, 230, originalData?.color || "#DC2626"); // 260 - 30 = 230
     }
 
+    // TOPPINGS
     ingredients.forEach((ing) => {
       if (ing.type === "topping" && loadedImages[ing.id]) {
         const img = loadedImages[ing.id];
@@ -143,7 +155,7 @@ export default function ArmaTuPizza({ cart, setCart }) {
       }
     });
 
-
+    // ARRASTRE
     if (draggingOnCanvas && loadedImages[draggingOnCanvas.ingredientId]) {
       const img = loadedImages[draggingOnCanvas.ingredientId];
       const size = 55;
@@ -188,8 +200,10 @@ export default function ArmaTuPizza({ cart, setCart }) {
     const y = e.clientY - rect.top;
     const centerX = canvas.width / 2;
     const centerY = canvas.height / 2;
+    
+    const halfSize = 130; 
 
-    if (Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2) <= 135) {
+    if (Math.abs(x - centerX) <= halfSize && Math.abs(y - centerY) <= halfSize) {
       setIngredients([...ingredients, { ...selectedIngredient, x, y, instanceId: Date.now() }]);
       setTotalPrice((prev) => prev + selectedIngredient.price);
       setSelectedIngredient(null);
@@ -204,7 +218,8 @@ export default function ArmaTuPizza({ cart, setCart }) {
     for (let i = ingredients.length - 1; i >= 0; i--) {
       const ing = ingredients[i];
       if (ing.type === "topping") {
-        if (Math.abs(mouseX - ing.x) < 27 && Math.abs(mouseY - ing.y) < 27) {
+        const size = 55;
+        if (Math.abs(mouseX - ing.x) < size / 2 && Math.abs(mouseY - ing.y) < size / 2) {
           setDraggingOnCanvas({
             index: i, ingredientId: ing.id, x: ing.x, y: ing.y,
             offsetX: mouseX - ing.x, offsetY: mouseY - ing.y,
@@ -228,8 +243,10 @@ export default function ArmaTuPizza({ cart, setCart }) {
       const x = e.clientX - canvasRef.current.getBoundingClientRect().left - draggingOnCanvas.offsetX;
       const y = e.clientY - canvasRef.current.getBoundingClientRect().top - draggingOnCanvas.offsetY;
       const centerX = 200, centerY = 200; 
-      
-      if (Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2) <= 135) {
+      const halfSize = 130;
+
+      // Validar si soltó dentro del cuadrado
+      if (Math.abs(x - centerX) <= halfSize && Math.abs(y - centerY) <= halfSize) {
         const newIngs = [...ingredients];
         newIngs[draggingOnCanvas.index] = { ...newIngs[draggingOnCanvas.index], x, y };
         setIngredients(newIngs);
@@ -261,7 +278,7 @@ export default function ArmaTuPizza({ cart, setCart }) {
     
     const newPizza = {
       id: Date.now(), 
-      name: `Pixza Custom`,
+      name: `Pixza Custom Cuadrada`,
       description: `Ingredientes: ${ingredientsNames}`,
       price: totalPrice,
       quantity: 1,
@@ -275,11 +292,17 @@ export default function ArmaTuPizza({ cart, setCart }) {
     resetPizza();
   };
 
+  const getCanvasClassName = () => {
+    if (selectedIngredient) return "canvas-selected";
+    if (draggingOnCanvas) return "canvas-dragging";
+    return "canvas-default";
+  };
+
   return (
     <div className="form-wrapper" style={{ maxWidth: "700px", margin: "0 auto", padding: "20px" }}>
       <h2 style={{ textAlign: "center" }}>Crea tu propia Pixza</h2>
       <p style={{ textAlign: "center", color: "#666", marginBottom: "20px" }}>
-          Haz clic en un ingrediente y luego en la pizza para colocarlo (˶ᵔ ᵕ ᵔ˶)
+          Haz clic en un ingrediente y luego en la pixza para colocarlo (˶ᵔ ᵕ ᵔ˶)
       </p>
 
       {/* SECCIÓN DE INGREDIENTES */}
@@ -321,6 +344,7 @@ export default function ArmaTuPizza({ cart, setCart }) {
         </div>
       </div>
 
+      {/* CANVAS PIZZA */}
       <div style={{ textAlign: "center", marginBottom: "20px", display: "flex", justifyContent: "center" }}>
         <canvas
           ref={canvasRef}
@@ -342,15 +366,15 @@ export default function ArmaTuPizza({ cart, setCart }) {
       {/* BOTONES */}
       <div style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
         <button onClick={resetPizza} style={{ flex: 1, padding: "12px", background: "#cfffd3", color: "#000", border: "2px solid #000", cursor: "pointer" }}>
-          Todo de nuevo Σ(°ロ°)
+          Reiniciar 🔄
         </button>
         <button onClick={saveImage} style={{ flex: 1, padding: "12px", background: "#c4e0ff", color: "#000", border: "2px solid #000", cursor: "pointer" }}>
-          Guardar como ∑d(°∀°d)
+          Guardar Foto 📸
         </button>
       </div>
 
       <button onClick={addToCart} style={{ width: "100%", padding: "15px", background: "#ffd7d0", color: "#000", border: "2px solid #000", cursor: "pointer", fontSize: "1.2em", fontWeight: "bold" }}>
-        Agregar al Carrito (´ᵔ⤙ᵔ`)
+        ¡Agregar al Carrito! 🛒
       </button>
     </div>
   );
