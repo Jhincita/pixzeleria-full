@@ -14,7 +14,12 @@ export default function About() {
 
             <h2>La historia</h2>
             <p>
-                Esta historia está en progreso, esperando llegar a niveles inexplorados.
+                Todo empezó en una calurosa noche de verano, cuando Camión-san atropelló a un grupo de desarrolladoras locas
+                y despertaron en nuevo mun-- no es cierto, esto no es un isekai (por desgracia).<br></br>
+                En fin, volviendo a la realidad, todo empezó cuando estas desarrolladoras,
+                absortas en líneas de código y píxeles, decidieron crear la pizzería más pixelada del mundo.
+                Inspiradas por los videojuegos retro, la cultura geek, y un gran hambre que las atacaba cada vez
+                que terminaban un proyecto, decidieron combinar sus dos pasiones: la programación y la pizza.
             </p>
 
             <div >
