@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
+import api from '../../services/api';
 import '../../styles/AdminPanel.css';
 
-const ProductsSection = ({ token }) => {
+const ProductsSection = () => {
   const [products, setProducts] = useState([]);
   const [ingredients, setIngredients] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Estados del Formulario
-  const [editingPizza, setEditingPizza] = useState(null); // Si no es null, estamos editando
+  const [editingPizza, setEditingPizza] = useState(null);
   
   // Datos
   const [formData, setFormData] = useState({
@@ -17,24 +18,25 @@ const ProductsSection = ({ token }) => {
     ingredientIds: []
   });
 
-  // Cargar datos
-  useEffect(() => { fetchData(); }, [token]);
+  // Cargar datos al montar
+  useEffect(() => { fetchData(); }, []);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-        const resPizzas = await fetch('http://localhost:8080/api/v1/pizzas', {
-            headers: { 'Authorization': 'Bearer ' + token }
-        });
-        if (resPizzas.ok) setProducts(await resPizzas.json());
+        // 1. Cargar Pizzas
+        const resPizzas = await api.get('/pizzas');
+        setProducts(resPizzas.data);
 
-        const resIng = await fetch('http://localhost:8080/api/v1/ingredients', {
-            headers: { 'Authorization': 'Bearer ' + token }
-        });
-        if (resIng.ok) setIngredients(await resIng.json());
+        // 2. Cargar Ingredientes
+        const resIng = await api.get('/ingredients');
+        setIngredients(resIng.data);
 
-    } catch (error) { console.error(error); } 
-    finally { setLoading(false); }
+    } catch (error) { 
+        console.error("Error cargando productos:", error); 
+    } finally { 
+        setLoading(false); 
+    }
   };
 
   // Preparar edición
@@ -64,56 +66,51 @@ const ProductsSection = ({ token }) => {
     }
   };
 
-  // Guardar pizza
+  // Guardar pizza (Crear o Editar)
   const handleSave = async (e) => {
     e.preventDefault();
     if (!formData.name.trim()) return alert("Nombre obligatorio");
-    if (formData.ingredientIds.length === 0) return alert("Selecciona ingredientes");
+    // if (formData.ingredientIds.length === 0) return alert("Selecciona ingredientes"); // Opcional
 
     const pizzaDTO = { 
         name: formData.name, 
         price: parseFloat(formData.price),
-        stock: parseInt(formData.stock),
+        stock: parseInt(formData.stock) || 0,
         ingredientIds: formData.ingredientIds 
     }; 
     
     try {
-        let url = 'http://localhost:8080/api/v1/pizzas';
-        let method = 'POST';
-
         if (editingPizza) {
-            url = `http://localhost:8080/api/v1/pizzas/${editingPizza.id}`;
-            method = 'PUT';
-        }
-
-        const response = await fetch(url, {
-            method: method,
-            headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + token 
-            },
-            body: JSON.stringify(pizzaDTO)
-        });
-
-        if (response.ok) {
-            alert(editingPizza ? "Pizza actualizada ദ്ദി◝ ⩊ ◜.ᐟ" : "Pizza creada ദ്ദി◝ ⩊ ◜.ᐟ");
-            handleCancel();
-            fetchData(); 
+            // EDITAR (PUT)
+            await api.put(`/pizzas/${editingPizza.id}`, pizzaDTO);
+            alert("Pizza actualizada ദ്ദി◝ ⩊ ◜.ᐟ");
         } else {
-            alert("Error al guardar.");
+            // CREAR (POST)
+            await api.post('/pizzas', pizzaDTO); // Nota: Revisa si tu backend tiene POST /api/pizzas implementado para admins
+            alert("Pizza creada ദ്ദി◝ ⩊ ◜.ᐟ");
         }
-    } catch (error) { console.error(error); alert("Error de conexión"); }
+
+        handleCancel();
+        fetchData(); 
+    } catch (error) { 
+        console.error(error); 
+        alert("Error al guardar. Revisa la consola."); 
+    }
   };
 
   // Eliminar
   const handleDelete = async (id) => {
     if(!window.confirm("¿Borrar pizza?")) return;
-    await fetch(`http://localhost:8080/api/v1/pizzas/${id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': 'Bearer ' + token }
-    });
-    fetchData();
+    try {
+        await api.delete(`/pizzas/${id}`);
+        fetchData();
+    } catch (error) {
+        console.error(error);
+        alert("Error al borrar.");
+    }
   };
+
+  if (loading) return <div style={{padding:'20px', textAlign:'center'}}>Cargando menú... 🍕</div>;
 
   return (
     <div className="section-container">
@@ -156,7 +153,6 @@ const ProductsSection = ({ token }) => {
                         type="number" 
                         value={formData.stock}
                         onChange={e => setFormData({...formData, stock: e.target.value})}
-                        required
                         placeholder="Ej: 50"
                         style={{width: '100%', padding: '10px'}}
                     />
@@ -164,9 +160,9 @@ const ProductsSection = ({ token }) => {
             </div>
 
             <div style={{marginBottom: '20px'}}>
-                <label style={{display:'block', marginBottom:'10px', fontWeight:'bold'}}>Ingredientes:</label>
+                <label style={{display:'block', marginBottom:'10px', fontWeight:'bold'}}>Ingredientes (Opcional):</label>
                 <div style={{display: 'flex', flexWrap: 'wrap', gap: '10px'}}>
-                    {ingredients.map(ing => (
+                    {ingredients.length > 0 ? ingredients.map(ing => (
                         <label key={ing.id} style={{
                             display: 'flex', alignItems: 'center', gap: '5px', padding: '5px 10px', 
                             background: formData.ingredientIds.includes(ing.id) ? '#e8f5e9' : '#f5f5f5',
@@ -180,7 +176,7 @@ const ProductsSection = ({ token }) => {
                             />
                             {ing.name}
                         </label>
-                    ))}
+                    )) : <p>No hay ingredientes cargados.</p>}
                 </div>
             </div>
 
@@ -214,8 +210,8 @@ const ProductsSection = ({ token }) => {
                     {p.ingredients?.map(i => i.name).join(", ")}
                 </td>
                 <td>
-                  <button onClick={() => handleEdit(p)} style={{marginRight:'10px', cursor:'pointer'}}>✏️ Editar</button>
-                  <button onClick={() => handleDelete(p.id)} style={{color:'red', cursor:'pointer'}}>🗑️ Borrar</button>
+                  <button onClick={() => handleEdit(p)} style={{marginRight:'10px', cursor:'pointer'}}>✏️</button>
+                  <button onClick={() => handleDelete(p.id)} style={{color:'red', cursor:'pointer'}}>🗑️</button>
                 </td>
               </tr>
             ))}
@@ -227,3 +223,4 @@ const ProductsSection = ({ token }) => {
 };
 
 export default ProductsSection;
+
