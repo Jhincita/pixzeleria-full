@@ -1,74 +1,100 @@
 import { useState, useEffect } from 'react';
+import api from '../../services/api';
 import '../../styles/AdminPanel.css';
 
-const ReportsSection = ({ token }) => {
-  const [ingredients, setIngredients] = useState([]);
-  
-  useEffect(() => {
-    fetch('http://localhost:8080/api/v1/ingredients', {
-        headers: { 'Authorization': `Bearer ${token}` }
-    })
-    .then(res => res.json())
-    .then(data => setIngredients(data))
-    .catch(err => console.error(err));
-  }, [token]);
+const ReportSection = () => {
+  const [topProducts, setTopProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // Filtramos los que tienen poco stock
-  const lowStock = ingredients.filter(i => i.stock < 20);
+  useEffect(() => {
+    const generateReports = async () => {
+      try {
+        // 1. Traemos todas las órdenes
+        const response = await api.get('/orders');
+        const orders = response.data;
+
+        // 2. Calculamos ventas por producto manualmente
+        const productSales = {};
+
+        orders.forEach(order => {
+            if (order.items) {
+                order.items.forEach(item => {
+                    const prodName = item.product?.name || "Producto desconocido";
+                    if (!productSales[prodName]) {
+                        productSales[prodName] = 0;
+                    }
+                    productSales[prodName] += item.quantity;
+                });
+            }
+        });
+
+        // 3. Convertimos a array y ordenamos
+        const sortedProducts = Object.entries(productSales)
+            .map(([name, count]) => ({ name, count }))
+            .sort((a, b) => b.count - a.count); // Ordenar de mayor a menor
+
+        setTopProducts(sortedProducts);
+
+      } catch (error) {
+        console.error("Error generando reportes:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    generateReports();
+  }, []);
+
+  if (loading) return <div className="loading-msg">Generando reportes... 📈</div>;
 
   return (
     <div className="section-container">
       <div className="section-header">
-        <h2>Reportes de Inventario</h2>
+        <h2>Reportes de Ventas</h2>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+      <div style={{display: 'flex', gap: '20px', flexWrap: 'wrap'}}>
         
-        {/* Alerta de stock*/}
-        <div style={{ background: 'white', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 5px rgba(0,0,0,0.1)' }}>
-          <h3 style={{ color: '#c0392b', borderBottom: '2px solid #c0392b', paddingBottom: '10px' }}>
-            Alerta: Stock Crítico (Menos de 20)
-          </h3>
-          {lowStock.length === 0 ? (
-            <p style={{ color: 'green' }}>Todo el inventario está saludable.</p>
-          ) : (
-            <ul style={{ listStyle: 'none', padding: 0 }}>
-              {lowStock.map(ing => (
-                <li key={ing.id} style={{ padding: '10px', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between' }}>
-                  <span>{ing.name}</span>
-                  <strong style={{ color: 'red' }}>{ing.stock} u.</strong>
-                </li>
-              ))}
-            </ul>
-          )}
+        {/* Tarjeta: Producto Estrella */}
+        <div style={{
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            color: 'white', padding: '20px', borderRadius: '10px', flex: 1, minWidth: '250px'
+        }}>
+            <h3 style={{marginTop: 0}}>⭐ Pizza Más Vendida</h3>
+            {topProducts.length > 0 ? (
+                <div>
+                    <h1 style={{fontSize: '2.5em', margin: '10px 0'}}>{topProducts[0].name}</h1>
+                    <p>Con <strong>{topProducts[0].count}</strong> unidades vendidas</p>
+                </div>
+            ) : <p>Aún no hay datos suficientes</p>}
         </div>
 
-        {/* Resumen total */}
-        <div style={{ background: 'white', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 5px rgba(0,0,0,0.1)' }}>
-          <h3 style={{ color: '#2980b9', borderBottom: '2px solid #2980b9', paddingBottom: '10px' }}>
-            📋 Resumen de Insumos
-          </h3>
-          <p>Total de tipos de ingredientes: <strong>{ingredients.length}</strong></p>
-          <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
-            <table style={{ width: '100%', fontSize: '0.9em' }}>
+        {/* Tabla: Ranking Completo */}
+        <div style={{flex: 2, background: 'white', padding: '20px', borderRadius: '10px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)'}}>
+            <h3>🏆 Ranking de Popularidad</h3>
+            <table className="admin-table" style={{marginTop: '10px'}}>
                 <thead>
-                    <tr style={{textAlign:'left'}}><th>Ingrediente</th><th>Stock Actual</th></tr>
+                    <tr>
+                        <th>#</th>
+                        <th>Producto</th>
+                        <th>Ventas Totales</th>
+                    </tr>
                 </thead>
                 <tbody>
-                    {ingredients.map(ing => (
-                        <tr key={ing.id}>
-                            <td>{ing.name}</td>
-                            <td>{ing.stock}</td>
+                    {topProducts.map((p, index) => (
+                        <tr key={index}>
+                            <td>{index + 1}</td>
+                            <td>{p.name}</td>
+                            <td>{p.count}</td>
                         </tr>
                     ))}
+                    {topProducts.length === 0 && <tr><td colSpan="3">Sin ventas registradas</td></tr>}
                 </tbody>
             </table>
-          </div>
         </div>
-
       </div>
     </div>
   );
 };
 
-export default ReportsSection;
+export default ReportSection;
