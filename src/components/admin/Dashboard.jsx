@@ -63,14 +63,14 @@ const Dashboard = () => {
         
         {/* Tarjeta de Pedidos */}
         <div style={cardStyle}>
-          <div style={{ fontSize: '40px', marginBottom: '10px' }}>🍕</div>
+          <div style={{ fontSize: '40px', marginBottom: '10px' }}></div>
           <h3>Pedidos Totales</h3>
           <p style={{ fontSize: '2em', fontWeight: 'bold', margin: 0 }}>{stats.ordersCount}</p>
         </div>
 
         {/* Tarjeta de Dinero */}
         <div style={cardStyle}>
-          <div style={{ fontSize: '40px', marginBottom: '10px' }}>💰</div>
+          <div style={{ fontSize: '40px', marginBottom: '10px' }}></div>
           <h3>Ingresos Totales</h3>
           <p style={{ fontSize: '2em', fontWeight: 'bold', margin: 0, color: '#27ae60' }}>
             ${stats.salesTotal.toLocaleString('es-CL')}
@@ -79,7 +79,7 @@ const Dashboard = () => {
 
         {/* Tarjeta de Usuarios */}
         <div style={cardStyle}>
-          <div style={{ fontSize: '40px', marginBottom: '10px' }}>👥</div>
+          <div style={{ fontSize: '40px', marginBottom: '10px' }}></div>
           <h3>Clientes Registrados</h3>
           <p style={{ fontSize: '2em', fontWeight: 'bold', margin: 0, color: '#2980b9' }}>
             {stats.usersCount}
