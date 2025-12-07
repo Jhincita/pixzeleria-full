@@ -86,7 +86,7 @@ export default function ArmaTuPizza({ cart, setCart }) {
         );
         if (salsaIngredient) {
             const salsaData = availableIngredients.find((a) => a.id === salsaIngredient.id);
-            drawPixelSquare(ctx, centerX, centerY, radius - 15, salsaData.color);
+            drawPixelSquare(ctx, centerX, centerY, 236, salsaData.color);
         }
 
         // Toppings
