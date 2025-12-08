@@ -1,31 +1,73 @@
-import { pizzaAPI } from '../services/api';
+import { pizzaAPI, ingredientAPI } from '../services/api';
 
 import React, { useState, useRef, useEffect } from "react";
-import GratedCheese from "../assets/armatupizza/gratedcheese.svg";
-import Pepperoni from "../assets/armatupizza/pepperoni.svg";
-import Tomato from "../assets/armatupizza/tomato.svg";
 import styles from "./ArmaTuPizza.module.css";
 
 export default function ArmaTuPizza({ cart, setCart }) {
     const canvasRef = useRef(null);
-    const [ingredients, setIngredients] = useState([]);
+    const [ingredients, setIngredients] = useState([]); // Ingredients on pizza
+    const [availableIngredients, setAvailableIngredients] = useState([]); // From backend
     const [totalPrice, setTotalPrice] = useState(5000);
     const [loadedImages, setLoadedImages] = useState({});
     const [selectedIngredient, setSelectedIngredient] = useState(null);
     const [draggingOnCanvas, setDraggingOnCanvas] = useState(null);
     const [imagesLoaded, setImagesLoaded] = useState(false);
+    const [loading, setLoading] = useState(true);
 
-    const availableIngredients = [
-        { id: "salsa-roja", name: "Salsa de Tomate", price: 500, max: 1, color: "#DC2626", image: "src/assets/salsatomate.png", type: "salsa" },
-        { id: "salsa-bbq", name: "Salsa BBQ", price: 600, max: 1, color: "#92400E", image: "src/assets/salsa_bbq.png", type: "salsa" },
-        { id: "queso", name: "Queso", price: 500, max: 5, image: GratedCheese, type: "topping" },
-        { id: "tomate", name: "Tomate", price: 200, max: 5, image: Tomato, type: "topping" },
-        { id: "pepperoni", name: "Pepperoni", price: 250, max: 5, image: Pepperoni, type: "topping" },
-        { id: "cebolla", name: "Cebolla", price: 150, max: 5, image: "src/assets/cebolla.png", type: "topping" },
-        { id: "piña", name: "Piña", price: 250, max: 5, image: "src/assets/piña.png", type: "topping" },
-    ];
-
+    // Fetch ingredients from backend
     useEffect(() => {
+        async function fetchIngredients() {
+            try {
+                setLoading(true);
+                const response = await ingredientAPI.getAllIngredients();
+                console.log("Ingredients response:", response);
+
+                // Handle different response structures
+                let data;
+                if (Array.isArray(response)) {
+                    data = response;
+                } else if (response?.data && Array.isArray(response.data)) {
+                    data = response.data;
+                } else if (response?.data?.data && Array.isArray(response.data.data)) {
+                    data = response.data.data;
+                } else {
+                    console.error("Unexpected response structure:", response);
+                    data = [];
+                }
+
+                // Filter and format ingredients for pizza builder
+                const formatted = data
+                    .filter(ing => (ing.type === 'salsa' || ing.type === 'topping') && ing.stock > 0)
+                    .map(ing => ({
+                        id: ing.id,
+                        name: ing.name,
+                        price: ing.price || 0,
+                        max: ing.maxQuantity || 5,
+                        image: ing.imageUrl,
+                        type: ing.type,
+                        color: ing.color,
+                        stock: ing.stock
+                    }));
+
+                setAvailableIngredients(formatted);
+                console.log('✅ Ingredientes cargados:', formatted);
+
+            } catch (error) {
+                console.error('❌ Error fetching ingredients:', error);
+                alert('Error al cargar ingredientes del servidor.');
+                setAvailableIngredients([]);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        fetchIngredients();
+    }, []);
+
+    // Load ingredient images
+    useEffect(() => {
+        if (availableIngredients.length === 0) return;
+
         const images = {};
         let loadedCount = 0;
         const totalImages = availableIngredients.length;
@@ -37,7 +79,7 @@ export default function ArmaTuPizza({ cart, setCart }) {
                 if (loadedCount === totalImages) setImagesLoaded(true);
             };
             img.onerror = () => {
-                console.error(`Error cargando imagen: ${ingredient.image}`);
+                console.error(`❌ Error cargando imagen: ${ingredient.image}`);
                 loadedCount++;
                 if (loadedCount === totalImages) setImagesLoaded(true);
             };
@@ -46,7 +88,7 @@ export default function ArmaTuPizza({ cart, setCart }) {
         });
 
         setLoadedImages(images);
-    }, []);
+    }, [availableIngredients]);
 
     const drawPixelSquare = (ctx, x, y, size, fillColor, borderColor = null, borderWidth = 0) => {
         const pixelSize = 4;
@@ -257,9 +299,9 @@ export default function ArmaTuPizza({ cart, setCart }) {
             };
 
             // Save to backend
-            console.log('Saving pizza to backend...', pizzaData);
+            console.log('💾 Guardando pixza en backend...', pizzaData);
             const response = await pizzaAPI.createCustomPizza(pizzaData);
-            console.log('Pizza saved!', response.data);
+            console.log('✅ Pixza guardada!', response.data);
 
             // Add to local cart with backend ID
             const ingredientsList = ingredients.map((ing) => {
@@ -275,11 +317,11 @@ export default function ArmaTuPizza({ cart, setCart }) {
             };
 
             setCart([...cart, newPizza]);
-            alert(`¡Pixza agregada al carrito! ＼(￣▽￣)／ Total: ${totalPrice.toLocaleString("es-CL")}`);
+            alert(`¡Pixza agregada al carrito! ＼(￣▽￣)／ Total: $${totalPrice.toLocaleString("es-CL")}`);
             resetPizza();
 
         } catch (error) {
-            console.error('Error saving pizza:', error);
+            console.error('❌ Error guardando pixza:', error);
             alert('Error al guardar la pixza en el servidor. Se guardó localmente.');
 
             // Fallback: save to cart locally even if backend fails
@@ -305,6 +347,27 @@ export default function ArmaTuPizza({ cart, setCart }) {
         if (draggingOnCanvas) return `${styles.canvas} ${styles.dragging}`;
         return `${styles.canvas} ${styles.default}`;
     };
+
+    if (loading) {
+        return (
+            <div className={styles.container}>
+                <div className={styles.header}>
+                    <h2 className={styles.title}>Cargando ingredientes... 🍕</h2>
+                </div>
+            </div>
+        );
+    }
+
+    if (!availableIngredients || availableIngredients.length === 0) {
+        return (
+            <div className={styles.container}>
+                <div className={styles.header}>
+                    <h2 className={styles.title}>No hay ingredientes disponibles</h2>
+                    <p className={styles.subtitle}>Por favor, contacta al administrador</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className={styles.container}>
@@ -407,13 +470,13 @@ export default function ArmaTuPizza({ cart, setCart }) {
                                     const data = availableIngredients.find((ai) => ai.id === ing.id);
                                     return (
                                         <span key={ing.instanceId} className={styles.ingredientTag}>
-                      <img
-                          src={data.image}
-                          alt={data.name}
-                          className={styles.ingredientTagImage}
-                      />
+                                            <img
+                                                src={data.image}
+                                                alt={data.name}
+                                                className={styles.ingredientTagImage}
+                                            />
                                             {data.name}
-                    </span>
+                                        </span>
                                     );
                                 })}
                             </div>

@@ -43,6 +43,14 @@ export const clientAPI = {
     getClientById: (id) => api.get(`/clients/${id}`),
 };
 
+// Ingredient API
+export const ingredientAPI = {
+    getAllIngredients: () => api.get('/ingredients'),
+    getIngredientById: (id) => api.get(`/ingredients/${id}`),
+    getAvailableIngredients: () => api.get('/ingredients/available'),
+    getIngredientsByType: (type) => api.get(`/ingredients/type/${type}`),
+};
+
 // Auth API
 export const authAPI = {
     // Login
