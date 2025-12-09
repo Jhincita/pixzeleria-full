@@ -11,8 +11,10 @@ const AdminPanel = () => {
   const [token, setToken] = useState('');
 
   useEffect(() => {
-    const storedToken = sessionStorage.getItem('token');
+    const storedToken = localStorage.getItem('token');
     setToken(storedToken);
+    
+    console.log('🔐 Token en AdminPanel:', storedToken ? 'SÍ existe' : '❌ NO existe');
   }, []);
 
   const renderSection = () => {
