@@ -94,16 +94,21 @@ export default function CartPage({ cart, setCart }) {
             ) : (
                 <>
                     <ul style={{ listStyle: "none", padding: 0 }}>
-                        {cart.map(({ id, name, price, quantity }) => (
-                            <li
-                                key={id}
-                                style={{
-                                    marginBottom: "12px",
-                                    padding: "12px",
-                                    border: "2px solid #000",
-                                    backgroundColor: "#fff"
-                                }}
-                            >
+                        {cart.map(({ id, name, price, quantity }) => {
+                            const precioSeguro = price ?? 0;
+                            const precioFormateado = precioSeguro.toFixed(2);
+                            const subtotal = (precioSeguro * quantity).toFixed(2);
+
+                            return (
+                                <li
+                                    key={id}
+                                    style={{
+                                        marginBottom: "12px",
+                                        padding:  "12px",
+                                        border: "2px solid #000",
+                                        backgroundColor: "#fff"
+                                    }}
+                                >
                                 <div style={{
                                     display: 'flex',
                                     justifyContent: 'space-between',
