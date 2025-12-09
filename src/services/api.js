@@ -2,7 +2,6 @@ import axios from 'axios';
 
 const API_BASE_URL = 'https://pixzeleria-backend-production.up.railway.app/api';
 
-
 const api = axios.create({
     baseURL: API_BASE_URL,
     headers: {
@@ -10,16 +9,35 @@ const api = axios.create({
     },
 });
 
-// Add token to all requests
+// 🔥 Add token to all requests
 api.interceptors.request.use(
     (config) => {
         const token = localStorage.getItem('token');
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
+            console.log('🔐 Token agregado a:', config.url);
+        } else {
+            console.warn('⚠️ No hay token en localStorage para:', config.url);
         }
         return config;
     },
     (error) => {
+        return Promise.reject(error);
+    }
+);
+
+// 🔥 Handle 401/403 errors
+api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response?.status === 401 || error.response?.status === 403) {
+            console.error('❌ Error de autorización - limpiando token');
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            if (window.location.pathname.includes('/admin')) {
+                window.location.href = '/admin/login';
+            }
+        }
         return Promise.reject(error);
     }
 );
@@ -33,13 +51,8 @@ export const pizzaAPI = {
 
 // Client API
 export const clientAPI = {
-    // Register new client
     register: (clientData) => api.post('/clients', clientData),
-
-    // Get all clients
     getAllClients: () => api.get('/clients'),
-
-    // Get client by ID
     getClientById: (id) => api.get(`/clients/${id}`),
 };
 
@@ -53,24 +66,15 @@ export const ingredientAPI = {
 
 // Auth API
 export const authAPI = {
-    // Login
     login: (credentials) => api.post('/auth/login', credentials),
-
-    // Register
     register: (userData) => api.post('/auth/register', userData),
-
-    // Logout (clear token from localStorage)
     logout: () => {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
     },
-
-    // Check if user is logged in
     isAuthenticated: () => {
         return !!localStorage.getItem('token');
     },
-
-    // Get current user
     getCurrentUser: () => {
         const user = localStorage.getItem('user');
         return user ? JSON.parse(user) : null;
@@ -79,13 +83,8 @@ export const authAPI = {
 
 // Order API
 export const orderAPI = {
-    // Create new order
     createOrder: (orderData) => api.post('/orders', orderData),
-
-    // Get all orders
     getAllOrders: () => api.get('/orders'),
-
-    // Get order by ID
     getOrderById: (id) => api.get(`/orders/${id}`),
 };
 
