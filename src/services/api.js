@@ -26,22 +26,6 @@ api.interceptors.request.use(
     }
 );
 
-// 🔥 Handle 401/403 errors
-api.interceptors.response.use(
-    (response) => response,
-    (error) => {
-        if (error.response?.status === 401 || error.response?.status === 403) {
-            console.error('❌ Error de autorización - limpiando token');
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            if (window.location.pathname.includes('/admin')) {
-                window.location.href = '/home';
-            }
-        }
-        return Promise.reject(error);
-    }
-);
-
 // Pizza API
 export const pizzaAPI = {
     getAllPizzas: () => api.get('/pizzas').then(res => res.data),
