@@ -35,7 +35,7 @@ api.interceptors.response.use(
             localStorage.removeItem('token');
             localStorage.removeItem('user');
             if (window.location.pathname.includes('/admin')) {
-                window.location.href = '/';
+                window.location.href = '/home';
             }
         }
         return Promise.reject(error);
