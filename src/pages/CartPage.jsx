@@ -20,26 +20,28 @@ export default function CartPage({ cart, setCart }) {
                 : item
         ));
     };
+    
 
     const total = cart.reduce(
-        (sum, item) => sum + item.price * item.quantity,
+        (sum, item) => {
+            const precioSeguro = item?.price ??  0;
+            return sum + (precioSeguro * item.quantity);
+        },
         0
     );
     const handleCheckout = async () => {
         setIsLoading(true);
 
         try {
-            // Backend expects menuPizzaIds - array of pizza IDs
-            // For quantities > 1, repeat the ID
             const menuPizzaIds = [];
             cart.forEach(item => {
                 for (let i = 0; i < item.quantity; i++) {
-                    menuPizzaIds.push(item.id);
+                    menuPizzaIds. push(item.id);
                 }
             });
 
             const orderPayload = {
-                menuPizzaIds: menuPizzaIds  // ✅ This is what backend expects
+                menuPizzaIds: menuPizzaIds
             };
 
             console.log("Sending order payload:", orderPayload);
@@ -48,9 +50,8 @@ export default function CartPage({ cart, setCart }) {
             const response = await orderAPI.createOrder(orderPayload);
             console.log("Order created:", response.data);
 
-            // Set order data for confirmation screen (use local cart data for display)
             setOrderData({
-                id: response.data.id,
+                id:  response.data.id,
                 items: [...cart],
                 total: total,
                 timestamp: new Date()
@@ -60,12 +61,13 @@ export default function CartPage({ cart, setCart }) {
             setShowCheckout(true);
 
         } catch (error) {
-            console.error("Failed to create order:", error);
+            console. error("Failed to create order:", error);
             alert("Error al procesar tu pedido. Intenta de nuevo.");
         } finally {
             setIsLoading(false);
         }
     };
+
     const handleCloseCheckout = () => {
         setShowCheckout(false);
         setOrderData(null);
