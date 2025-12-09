@@ -1,25 +1,17 @@
 import { useState, useEffect } from 'react';
+import api from '../../services/api';
 import '../../styles/AdminPanel.css';
 
-const OrderSection = ({ token }) => { 
+const OrderSection = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const fetchOrders = async () => {
     try {
-      const response = await fetch('http://localhost:8080/api/v1/orders', {
-        headers: { 
-            'Authorization': 'Bearer ' + token,
-            'Content-Type': 'application/json'
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setOrders(data.sort((a, b) => b.id - a.id));
-      } else {
-        console.error("Error al cargar órdenes:", response.status);
-      }
+      const response = await api.get('/orders');
+      
+      setOrders(response.data.sort((a, b) => b.id - a.id));
+      
     } catch (error) {
       console.error("Error de conexión:", error);
     } finally {
@@ -29,34 +21,26 @@ const OrderSection = ({ token }) => {
 
   useEffect(() => {
     fetchOrders();
-  }, [token]);
+  }, []);
 
   const handleDelete = async (id) => {
     if (!window.confirm(`¿Estás segura de eliminar el pedido #${id}?`)) return;
 
     try {
-        const response = await fetch(`http://localhost:8080/api/v1/orders/${id}`, {
-            method: 'DELETE',
-            headers: { 'Authorization': 'Bearer ' + token }
-        });
-
-        if (response.ok) {
-            fetchOrders();
-        } else {
-            alert("No se pudo eliminar el pedido.");
-        }
+        await api.delete(`/orders/${id}`);
+        fetchOrders();
     } catch (error) {
         console.error(error);
+        alert("No se pudo eliminar el pedido. Revisa si tienes permisos.");
     }
   };
-
 
   const calculateTotal = (items) => {
     if (!items) return 0;
     return items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   };
 
-  if (loading) return <div style={{padding:'20px'}}>Cargando pedidos...</div>;
+  if (loading) return <div style={{padding:'20px'}}>Cargando pedidos... 🍕</div>;
 
   return (
     <div className="section-container">
@@ -137,3 +121,4 @@ const OrderSection = ({ token }) => {
 };
 
 export default OrderSection;
+
