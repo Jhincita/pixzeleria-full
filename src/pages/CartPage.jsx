@@ -9,18 +9,18 @@ export default function CartPage({ cart, setCart }) {
     const [showCheckout, setShowCheckout] = useState(false);
     const [orderData, setOrderData] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
+
     const removeItem = (id) => {
         setCart(cart.filter(item => item.id !== id));
     };
 
     const updateQuantity = (id, amount) => {
-        setCart(cart.map(item =>
-            item.id === id
-                ? { ...item, quantity: Math.max(item.quantity + amount, 1) }
+        setCart(cart. map(item =>
+            item. id === id
+                ? { ... item, quantity: Math.max(item.quantity + amount, 1) }
                 : item
         ));
     };
-    
 
     const total = cart.reduce(
         (sum, item) => {
@@ -29,10 +29,13 @@ export default function CartPage({ cart, setCart }) {
         },
         0
     );
+
     const handleCheckout = async () => {
         setIsLoading(true);
 
         try {
+            // Backend expects menuPizzaIds - array of pizza IDs
+            // For quantities > 1, repeat the ID
             const menuPizzaIds = [];
             cart.forEach(item => {
                 for (let i = 0; i < item.quantity; i++) {
@@ -50,6 +53,7 @@ export default function CartPage({ cart, setCart }) {
             const response = await orderAPI.createOrder(orderPayload);
             console.log("Order created:", response.data);
 
+            // Set order data for confirmation screen (use local cart data for display)
             setOrderData({
                 id:  response.data.id,
                 items: [...cart],
@@ -95,6 +99,7 @@ export default function CartPage({ cart, setCart }) {
                 <>
                     <ul style={{ listStyle: "none", padding: 0 }}>
                         {cart.map(({ id, name, price, quantity }) => {
+                            // 👇 PROTECCIÓN:  Validar precio antes de usarlo
                             const precioSeguro = price ?? 0;
                             const precioFormateado = precioSeguro.toFixed(2);
                             const subtotal = (precioSeguro * quantity).toFixed(2);
@@ -109,91 +114,92 @@ export default function CartPage({ cart, setCart }) {
                                         backgroundColor: "#fff"
                                     }}
                                 >
-                                <div style={{
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    marginBottom: '8px'
-                                }}>
-                                    <strong style={{ fontSize: '1.1em' }}>{name}</strong>
-                                    <span style={{ color: '#666' }}>
-                                        ${price.toFixed(2)} c/u
-                                    </span>
-                                </div>
-
-                                <div
-                                    style={{
-                                        display: "flex",
-                                        alignItems: "center",
-                                        justifyContent: "space-between",
-                                        gap: "8px",
-                                        marginTop: "10px"
-                                    }}
-                                >
-                                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                                        <button
-                                            onClick={() => updateQuantity(id, -1)}
-                                            style={{
-                                                padding: '6px 12px',
-                                                border: '2px solid #000',
-                                                backgroundColor: '#f4f4f4',
-                                                cursor: 'pointer',
-                                                fontWeight: 'bold'
-                                            }}
-                                        >
-                                            −
-                                        </button>
-                                        <span style={{
-                                            minWidth: '30px',
-                                            textAlign: 'center',
-                                            fontWeight: 'bold'
-                                        }}>
-                                            {quantity}
+                                    <div style={{
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        marginBottom: '8px'
+                                    }}>
+                                        <strong style={{ fontSize: '1.1em' }}>{name}</strong>
+                                        <span style={{ color: '#666' }}>
+                                            ${precioFormateado} c/u
                                         </span>
+                                    </div>
+
+                                    <div
+                                        style={{
+                                            display:  "flex",
+                                            alignItems: "center",
+                                            justifyContent: "space-between",
+                                            gap:  "8px",
+                                            marginTop: "10px"
+                                        }}
+                                    >
+                                        <div style={{ display: 'flex', gap: '8px', alignItems:  'center' }}>
+                                            <button
+                                                onClick={() => updateQuantity(id, -1)}
+                                                style={{
+                                                    padding: '6px 12px',
+                                                    border: '2px solid #000',
+                                                    backgroundColor: '#f4f4f4',
+                                                    cursor: 'pointer',
+                                                    fontWeight:  'bold'
+                                                }}
+                                            >
+                                                −
+                                            </button>
+                                            <span style={{
+                                                minWidth: '30px',
+                                                textAlign: 'center',
+                                                fontWeight: 'bold'
+                                            }}>
+                                                {quantity}
+                                            </span>
+                                            <button
+                                                onClick={() => updateQuantity(id, +1)}
+                                                style={{
+                                                    padding: '6px 12px',
+                                                    border:  '2px solid #000',
+                                                    backgroundColor: '#f4f4f4',
+                                                    cursor: 'pointer',
+                                                    fontWeight: 'bold'
+                                                }}
+                                            >
+                                                +
+                                            </button>
+                                        </div>
+
                                         <button
-                                            onClick={() => updateQuantity(id, +1)}
+                                            onClick={() => removeItem(id)}
                                             style={{
-                                                padding: '6px 12px',
+                                                padding:  '6px 12px',
                                                 border: '2px solid #000',
-                                                backgroundColor: '#f4f4f4',
-                                                cursor: 'pointer',
+                                                backgroundColor: '#ff6b6b',
+                                                color: '#fff',
+                                                cursor:  'pointer',
                                                 fontWeight: 'bold'
                                             }}
                                         >
-                                            +
+                                            Eliminar
                                         </button>
                                     </div>
 
-                                    <button
-                                        onClick={() => removeItem(id)}
-                                        style={{
-                                            padding: '6px 12px',
-                                            border: '2px solid #000',
-                                            backgroundColor: '#ff6b6b',
-                                            color: '#fff',
-                                            cursor: 'pointer',
-                                            fontWeight: 'bold'
-                                        }}
-                                    >
-                                        Eliminar
-                                    </button>
-                                </div>
-
-                                <div style={{
-                                    marginTop: '8px',
-                                    textAlign: 'right',
-                                    fontWeight: 'bold'
-                                }}>
-                                    Subtotal: ${(price * quantity).toFixed(2)}
-                                </div>
-                            </li>
-                        ))}
+                                    <div style={{
+                                        marginTop: '8px',
+                                        textAlign:  'right',
+                                        fontWeight: 'bold'
+                                    }}>
+                                        Subtotal: ${subtotal}
+                                    </div>
+                                </li>
+                            );
+                        })}
                     </ul>
 
                     <div style={{
                         marginTop: '20px',
                         padding: '15px',
                         border: '2px solid #000',
-                        backgroundColor: '#f9f9f9'
+                        backgroundColor:  '#f9f9f9'
                     }}>
                         <div style={{
                             display: 'flex',
