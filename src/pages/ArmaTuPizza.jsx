@@ -37,15 +37,14 @@ export default function ArmaTuPizza({ cart, setCart }) {
 
                 // Filter and format ingredients for pizza builder
                 const formatted = data
-                    .filter(ing => (ing.type === 'salsa' || ing.type === 'topping') && ing.stock > 0)
+                    .filter(ing => ing.stock > 0)  // Only filter by stock
                     .map(ing => ({
                         id: ing.id,
                         name: ing.name,
-                        price: ing.price || 0,
-                        max: ing.maxQuantity || 5,
+                        price: ing.price || 500,  // Default price if not set
+                        max: 5,
                         image: ing.imageUrl,
-                        type: ing.type,
-                        color: ing.color,
+                        type: 'topping',  // Default all to topping
                         stock: ing.stock
                     }));
 
