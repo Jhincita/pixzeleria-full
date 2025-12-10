@@ -14,7 +14,6 @@ export default function ArmaTuPizza({ cart, setCart }) {
     const [imagesLoaded, setImagesLoaded] = useState(false);
     const [loading, setLoading] = useState(true);
 
-    // Fetch ingredients from backend
     useEffect(() => {
         async function fetchIngredients() {
             try {
@@ -41,7 +40,7 @@ export default function ArmaTuPizza({ cart, setCart }) {
                         max: 5,
                         image: ing.imageUrl,
                         type: ing.type || 'topping',
-                        color: ing.color || null, // Add color for salsa
+                        color: ing.color || null,
                         stock: ing.stock
                     }));
 
@@ -58,7 +57,6 @@ export default function ArmaTuPizza({ cart, setCart }) {
         fetchIngredients();
     }, []);
 
-    // Load ingredient images
     useEffect(() => {
         if (availableIngredients.length === 0) return;
 
@@ -114,10 +112,8 @@ export default function ArmaTuPizza({ cart, setCart }) {
         ctx.imageSmoothingEnabled = false;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // Base
         drawPixelSquare(ctx, centerX, centerY, 260, "#F59E0B", "#D97706", 12);
 
-        // Salsa
         const salsaIngredient = ingredients.find((i) =>
             availableIngredients.find((a) => a.id === i.id)?.type === "salsa"
         );
@@ -126,7 +122,6 @@ export default function ArmaTuPizza({ cart, setCart }) {
             drawPixelSquare(ctx, centerX, centerY, radius - 15, salsaData.color);
         }
 
-        // Toppings
         ingredients.forEach((ing) => {
             const data = availableIngredients.find((a) => a.id === ing.id);
             if (data?.type === "topping" && loadedImages[ing.id]) {
@@ -136,7 +131,6 @@ export default function ArmaTuPizza({ cart, setCart }) {
             }
         });
 
-        // Dragging ingredient
         if (draggingOnCanvas && loadedImages[draggingOnCanvas.ingredientId]) {
             const img = loadedImages[draggingOnCanvas.ingredientId];
             const size = 55;
@@ -149,15 +143,6 @@ export default function ArmaTuPizza({ cart, setCart }) {
     useEffect(() => {
         drawPizza();
     }, [ingredients, draggingOnCanvas, imagesLoaded]);
-
-    const getIngredientCount = (id) => ingredients.filter((i) => i.id === id).length;
-
-    const canAddIngredient = (ingredient) => {
-        const count = getIngredientCount(ingredient.id);
-        if (ingredient.type === "salsa")
-            return !ingredients.some((i) => availableIngredients.find((ai) => ai.id === i.id)?.type === "salsa");
-        return count < ingredient.max;
-    };
 
     const handleIngredientClick = (ingredient) => {
         if (!canAddIngredient(ingredient)) return;
@@ -175,95 +160,27 @@ export default function ArmaTuPizza({ cart, setCart }) {
         setSelectedIngredient(ingredient);
     };
 
-    const handleCanvasClick = (e) => {
-        if (!selectedIngredient) return;
-
-        const canvas = canvasRef.current;
-        const rect = canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        const centerX = canvas.width / 2;
-        const centerY = canvas.height / 2;
-        const distance = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
-
-        if (distance <= 135) {
-            setIngredients([...ingredients, { ...selectedIngredient, x, y, instanceId: Date.now() }]);
-            setTotalPrice((prev) => prev + selectedIngredient.price);
-            setSelectedIngredient(null);
+    const canAddIngredient = (ingredient) => {
+        const count = ingredients.filter((i) => i.id === ingredient.id).length;
+        if (ingredient.type === "salsa") {
+            return !ingredients.some((i) => availableIngredients.find((ai) => ai.id === i.id)?.type === "salsa");
         }
-    };
-
-    const resetPizza = () => {
-        setIngredients([]);
-        setTotalPrice(5000);
-        setSelectedIngredient(null);
-    };
-
-    const saveImage = () => {
-        const canvas = canvasRef.current;
-        const link = document.createElement("a");
-        link.download = "mi-propia-pixza.png";
-        link.href = canvas.toDataURL();
-        link.click();
-    };
-
-    const addToCart = async () => {
-        if (ingredients.length === 0) {
-            alert("Agrega al menos un ingrediente antes de guardar tu pixza (⇀‸↼‶)");
-            return;
-        }
-
-        try {
-            const pizzaData = {
-                name: "Pixza Personalizada",
-                basePrice: 5000,
-                size: "Medium",
-                ingredients: ingredients.map((ing) => {
-                    const data = availableIngredients.find((a) => a.id === ing.id);
-                    return {
-                        ingredientId: ing.id,
-                        name: data.name,
-                        price: data.price,
-                        positionX: ing.x || 0,
-                        positionY: ing.y || 0,
-                    };
-                }),
-                totalPrice: totalPrice,
-            };
-
-            const response = await pizzaAPI.createCustomPizza(pizzaData);
-            const newPizza = {
-                id: response.data.id,
-                name: `Pixza Personalizada`,
-                price: totalPrice,
-                quantity: 1,
-            };
-
-            setCart([...cart, newPizza]);
-            resetPizza();
-        } catch (error) {
-            console.error('Error saving pizza:', error);
-            alert('Error al guardar la pixza en el servidor.');
-        }
-    };
-
-    const getCanvasClassName = () => {
-        if (selectedIngredient) return `${styles.canvas} ${styles.selectedIngredient}`;
-        if (draggingOnCanvas) return `${styles.canvas} ${styles.dragging}`;
-        return `${styles.canvas} ${styles.default}`;
+        return count < ingredient.max;
     };
 
     if (loading) {
-        return (
-            <div className={styles.container}>
-                <h2>Cargando ingredientes... 🍕</h2>
-            </div>
-        );
+        return <div className={styles.container}>Cargando ingredientes...</div>;
     }
 
     return (
         <div className={styles.container}>
-            {/* Diseño omitido por simplicidad */}
+            {/* Canvas */}
+            <canvas
+                ref={canvasRef}
+                width={400}
+                height={400}
+                className={styles.pizzaCanvas}
+            />
         </div>
     );
 }
