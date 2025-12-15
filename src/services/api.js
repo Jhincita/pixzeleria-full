@@ -9,13 +9,12 @@ const api = axios.create({
     },
 });
 
-// 🔥 Add token to all requests
+// Add token to all requests
 api.interceptors.request.use(
     (config) => {
         const token = localStorage.getItem('token');
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
-            console.log('🔐 Token agregado a:', config.url);
         } else {
             console.warn('⚠️ No hay token en localStorage para:', config.url);
         }
@@ -26,18 +25,10 @@ api.interceptors.request.use(
     }
 );
 
-// Pizza API
+// Pizza API (menu only - no more /custom endpoint)
 export const pizzaAPI = {
     getAllPizzas: () => api.get('/pizzas').then(res => res.data),
     getPizzaById: (id) => api.get(`/pizzas/${id}`).then(res => res.data),
-    createCustomPizza: (pizzaData) => api.post('/pizzas/custom', pizzaData).then(res => res.data),
-};
-
-// Client API
-export const clientAPI = {
-    register: (clientData) => api.post('/clients', clientData),
-    getAllClients: () => api.get('/clients'),
-    getClientById: (id) => api.get(`/clients/${id}`),
 };
 
 // Ingredient API
@@ -65,18 +56,25 @@ export const authAPI = {
     }
 };
 
-// Order API
+// Order API - accepts the payload directly from CartPage
 export const orderAPI = {
-    createOrder: (orderData) => api.post('/orders', orderData),
+    createOrder: (orderPayload) => {
+        console.log('📦 Enviando orden:', orderPayload);
+        return api.post('/orders', orderPayload);
+    },
     getAllOrders: () => api.get('/orders'),
     getOrderById: (id) => api.get(`/orders/${id}`),
+    deleteOrder: (id) => api.delete(`/orders/${id}`),
 };
 
-// Shorthand exports for convenience
-export const getClients = () => api.get('/clients');
-export const getClient = (id) => api.get(`/clients/${id}`);
-export const createClient = (data) => api.post('/clients', data);
+// Client API
+export const clientAPI = {
+    register: (clientData) => api.post('/clients', clientData),
+    getAllClients: () => api.get('/clients'),
+    getClientById: (id) => api.get(`/clients/${id}`),
+};
+
+// Shorthand exports
 export const getAllPizzas = () => api.get('/pizzas');
-export const createPizza = (data) => api.post('/pizzas/custom', data);
 
 export default api;

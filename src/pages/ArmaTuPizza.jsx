@@ -1,18 +1,23 @@
-import { pizzaAPI, ingredientAPI } from '../services/api';
+import { ingredientAPI } from '../services/api';
 
 import React, { useState, useRef, useEffect } from "react";
 import styles from "./ArmaTuPizza.module.css";
 
 export default function ArmaTuPizza({ cart, setCart }) {
     const canvasRef = useRef(null);
-    const [ingredients, setIngredients] = useState([]); // Ingredients on pizza
+    const [ingredients, setIngredients] = useState([]); // Toppings on pizza
     const [availableIngredients, setAvailableIngredients] = useState([]); // From backend
-    const [totalPrice, setTotalPrice] = useState(5000);
+    const [selectedMasa, setSelectedMasa] = useState(null); // Selected dough
+    const [selectedSalsa, setSelectedSalsa] = useState(null); // Selected sauce
+    const [totalPrice, setTotalPrice] = useState(5000); // Base price
     const [loadedImages, setLoadedImages] = useState({});
     const [selectedIngredient, setSelectedIngredient] = useState(null);
     const [draggingOnCanvas, setDraggingOnCanvas] = useState(null);
     const [imagesLoaded, setImagesLoaded] = useState(false);
     const [loading, setLoading] = useState(true);
+
+    // Base price for pizza
+    const BASE_PRICE = 5000;
 
     // Fetch ingredients from backend
     useEffect(() => {
@@ -22,7 +27,6 @@ export default function ArmaTuPizza({ cart, setCart }) {
                 const response = await ingredientAPI.getAllIngredients();
                 console.log("Ingredients response:", response);
 
-                // Handle different response structures
                 let data;
                 if (Array.isArray(response)) {
                     data = response;
@@ -35,21 +39,29 @@ export default function ArmaTuPizza({ cart, setCart }) {
                     data = [];
                 }
 
-                // Filter and format ingredients for pizza builder
+                // Format ingredients - type comes from backend
                 const formatted = data
-                    .filter(ing => ing.stock > 0)  // Only filter by stock
+                    .filter(ing => ing.stock > 0)
                     .map(ing => ({
                         id: ing.id,
                         name: ing.name,
-                        price: ing.price || 500,  // Default price if not set
-                        max: 5,
+                        price: ing.price || 500,
+                        max: ing.type === 'topping' ? 5 : 1,
                         image: ing.imageUrl,
-                        type: 'topping',  // Default all to topping
+                        type: ing.type || 'topping', // 'masa', 'salsa', or 'topping'
+                        color: ing.color || '#E53935', // For salsa color
                         stock: ing.stock
                     }));
 
                 setAvailableIngredients(formatted);
                 console.log('✅ Ingredientes cargados:', formatted);
+
+                // Auto-select first masa if available
+                const defaultMasa = formatted.find(i => i.type === 'masa');
+                if (defaultMasa) {
+                    setSelectedMasa(defaultMasa);
+                    setTotalPrice(BASE_PRICE + defaultMasa.price);
+                }
 
             } catch (error) {
                 console.error('❌ Error fetching ingredients:', error);
@@ -63,22 +75,28 @@ export default function ArmaTuPizza({ cart, setCart }) {
         fetchIngredients();
     }, []);
 
-    // Load ingredient images
+    // Load topping images (only for toppings)
     useEffect(() => {
         if (availableIngredients.length === 0) return;
 
+        const toppings = availableIngredients.filter(i => i.type === 'topping');
+        if (toppings.length === 0) {
+            setImagesLoaded(true);
+            return;
+        }
+
         const images = {};
         let loadedCount = 0;
-        const totalImages = availableIngredients.length;
+        const totalImages = toppings.length;
 
-        availableIngredients.forEach((ingredient) => {
+        toppings.forEach((ingredient) => {
             const img = new Image();
             img.onload = () => {
                 loadedCount++;
                 if (loadedCount === totalImages) setImagesLoaded(true);
             };
             img.onerror = () => {
-                console.error(`❌ Error cargando imagen: ${ingredient.image}`);
+                console.error(`❌ Error loading image: ${ingredient.image}`);
                 loadedCount++;
                 if (loadedCount === totalImages) setImagesLoaded(true);
             };
@@ -89,6 +107,7 @@ export default function ArmaTuPizza({ cart, setCart }) {
         setLoadedImages(images);
     }, [availableIngredients]);
 
+    // Draw pixel square helper
     const drawPixelSquare = (ctx, x, y, size, fillColor, borderColor = null, borderWidth = 0) => {
         const pixelSize = 4;
         const half = size / 2;
@@ -108,31 +127,29 @@ export default function ArmaTuPizza({ cart, setCart }) {
         }
     };
 
+    // Draw the pizza
     const drawPizza = () => {
         const canvas = canvasRef.current;
-        if (!canvas || !imagesLoaded) return;
+        if (!canvas) return;
 
         const ctx = canvas.getContext("2d");
         const centerX = canvas.width / 2;
         const centerY = canvas.height / 2;
-        const radius = 150;
 
         ctx.imageSmoothingEnabled = false;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // Base
+        // 1. MASA (Dough) - Just the base square, masa is NOT visually shown
+        // The dough affects price but the visual is always the same base
         drawPixelSquare(ctx, centerX, centerY, 260, "#F59E0B", "#D97706", 12);
 
-        // Salsa
-        const salsaIngredient = ingredients.find((i) =>
-            availableIngredients.find((a) => a.id === i.id)?.type === "salsa"
-        );
-        if (salsaIngredient) {
-            const salsaData = availableIngredients.find((a) => a.id === salsaIngredient.id);
-            drawPixelSquare(ctx, centerX, centerY, 236, salsaData.color);
+        // 2. SALSA (Sauce) - Covers the pizza leaving crust visible
+        if (selectedSalsa) {
+            // Draw sauce inside the crust area (smaller square)
+            drawPixelSquare(ctx, centerX, centerY, 220, selectedSalsa.color);
         }
 
-        // Toppings
+        // 3. TOPPINGS - Draw on top of everything
         ingredients.forEach((ing) => {
             const data = availableIngredients.find((a) => a.id === ing.id);
             if (data?.type === "topping" && loadedImages[ing.id]) {
@@ -142,7 +159,7 @@ export default function ArmaTuPizza({ cart, setCart }) {
             }
         });
 
-        // Dragging ingredient
+        // Dragging ingredient preview
         if (draggingOnCanvas && loadedImages[draggingOnCanvas.ingredientId]) {
             const img = loadedImages[draggingOnCanvas.ingredientId];
             const size = 55;
@@ -154,31 +171,55 @@ export default function ArmaTuPizza({ cart, setCart }) {
 
     useEffect(() => {
         drawPizza();
-    }, [ingredients, draggingOnCanvas, imagesLoaded]);
+    }, [ingredients, selectedSalsa, draggingOnCanvas, imagesLoaded]);
+
+    // Calculate total price
+    const calculateTotalPrice = () => {
+        let total = BASE_PRICE;
+
+        if (selectedMasa) total += selectedMasa.price;
+        if (selectedSalsa) total += selectedSalsa.price;
+
+        // Add topping prices
+        ingredients.forEach(ing => {
+            const data = availableIngredients.find(a => a.id === ing.id);
+            if (data) total += data.price;
+        });
+
+        return total;
+    };
+
+    // Update price when ingredients change
+    useEffect(() => {
+        setTotalPrice(calculateTotalPrice());
+    }, [selectedMasa, selectedSalsa, ingredients]);
 
     const getIngredientCount = (id) => ingredients.filter((i) => i.id === id).length;
 
-    const canAddIngredient = (ingredient) => {
+    const canAddTopping = (ingredient) => {
         const count = getIngredientCount(ingredient.id);
-        if (ingredient.type === "salsa")
-            return !ingredients.some((i) => availableIngredients.find((ai) => ai.id === i.id)?.type === "salsa");
         return count < ingredient.max;
     };
 
-    const handleIngredientClick = (ingredient) => {
-        if (!canAddIngredient(ingredient)) return;
+    // Handle masa selection
+    const handleMasaClick = (masa) => {
+        setSelectedMasa(masa);
+    };
 
-        if (ingredient.type === "salsa") {
-            const others = ingredients.filter(
-                (i) => availableIngredients.find((ai) => ai.id === i.id)?.type !== "salsa"
-            );
-            setIngredients([...others, { ...ingredient }]);
-            setTotalPrice((prev) => prev + ingredient.price);
-            setSelectedIngredient(null);
-            return;
+    // Handle salsa selection
+    const handleSalsaClick = (salsa) => {
+        if (selectedSalsa?.id === salsa.id) {
+            // Deselect if clicking same sauce
+            setSelectedSalsa(null);
+        } else {
+            setSelectedSalsa(salsa);
         }
+    };
 
-        setSelectedIngredient(ingredient);
+    // Handle topping selection (for placing on canvas)
+    const handleToppingClick = (topping) => {
+        if (!canAddTopping(topping)) return;
+        setSelectedIngredient(topping);
     };
 
     const handleCanvasClick = (e) => {
@@ -192,9 +233,9 @@ export default function ArmaTuPizza({ cart, setCart }) {
         const centerY = canvas.height / 2;
         const distance = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
 
-        if (distance <= 135) {
+        // Only place within sauce area
+        if (distance <= 110) {
             setIngredients([...ingredients, { ...selectedIngredient, x, y, instanceId: Date.now() }]);
-            setTotalPrice((prev) => prev + selectedIngredient.price);
             setSelectedIngredient(null);
         }
     };
@@ -205,22 +246,20 @@ export default function ArmaTuPizza({ cart, setCart }) {
         const mouseX = e.clientX - rect.left;
         const mouseY = e.clientY - rect.top;
 
+        // Check if clicking on existing topping
         for (let i = ingredients.length - 1; i >= 0; i--) {
             const ing = ingredients[i];
-            const data = availableIngredients.find((ai) => ai.id === ing.id);
-            if (data?.type === "topping") {
-                const size = 55;
-                if (Math.abs(mouseX - ing.x) < size / 2 && Math.abs(mouseY - ing.y) < size / 2) {
-                    setDraggingOnCanvas({
-                        index: i,
-                        ingredientId: ing.id,
-                        x: ing.x,
-                        y: ing.y,
-                        offsetX: mouseX - ing.x,
-                        offsetY: mouseY - ing.y,
-                    });
-                    return;
-                }
+            const size = 55;
+            if (Math.abs(mouseX - ing.x) < size / 2 && Math.abs(mouseY - ing.y) < size / 2) {
+                setDraggingOnCanvas({
+                    index: i,
+                    ingredientId: ing.id,
+                    x: ing.x,
+                    y: ing.y,
+                    offsetX: mouseX - ing.x,
+                    offsetY: mouseY - ing.y,
+                });
+                return;
             }
         }
 
@@ -246,7 +285,7 @@ export default function ArmaTuPizza({ cart, setCart }) {
         const centerY = canvas.height / 2;
         const distance = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
 
-        if (distance <= 135) {
+        if (distance <= 110) {
             const newIngredients = [...ingredients];
             newIngredients[draggingOnCanvas.index] = {
                 ...newIngredients[draggingOnCanvas.index],
@@ -260,8 +299,10 @@ export default function ArmaTuPizza({ cart, setCart }) {
 
     const resetPizza = () => {
         setIngredients([]);
-        setTotalPrice(5000);
+        setSelectedSalsa(null);
+        // Keep masa selected
         setSelectedIngredient(null);
+        setTotalPrice(BASE_PRICE + (selectedMasa?.price || 0));
     };
 
     const saveImage = () => {
@@ -272,73 +313,48 @@ export default function ArmaTuPizza({ cart, setCart }) {
         link.click();
     };
 
-    const addToCart = async () => {
-        if (ingredients.length === 0) {
-            alert("Agrega al menos un ingrediente antes de guardar tu pixza (⇀‸↼‶)");
+    // Add to cart - NO backend call, just local
+    const addToCart = () => {
+        if (!selectedMasa) {
+            alert("Selecciona una masa primero (⇀‸↼‶)");
             return;
         }
 
-        try {
-            // Prepare pizza data for backend
-            const pizzaData = {
-                name: "Pixza Personalizada",
-                basePrice: 5000,
-                size: "Medium",
-                ingredients: ingredients.map((ing) => {
-                    const data = availableIngredients.find((a) => a.id === ing.id);
-                    return {
-                        ingredientId: ing.id,
-                        name: data.name,
-                        price: data.price,
-                        positionX: ing.x || 0,
-                        positionY: ing.y || 0,
-                    };
-                }),
-                totalPrice: totalPrice,
-            };
+        // Collect all ingredient IDs
+        const allIngredientIds = [];
 
-            // Save to backend
-            console.log('💾 Guardando pixza en backend...', pizzaData);
-            const response = await pizzaAPI.createCustomPizza(pizzaData);
-            console.log('✅ Pixza guardada!', response.data);
+        if (selectedMasa) allIngredientIds.push(selectedMasa.id);
+        if (selectedSalsa) allIngredientIds.push(selectedSalsa.id);
 
-            // Add to local cart with backend ID
-            const ingredientsList = ingredients.map((ing) => {
-                const data = availableIngredients.find((a) => a.id === ing.id);
-                return data.name;
-            });
+        // Add topping IDs (can have duplicates)
+        ingredients.forEach(ing => allIngredientIds.push(ing.id));
 
-            const newPizza = {
-                id: response.data.id, // Use backend ID
-                name: `Pixza Personalizada (${ingredientsList.join(", ")})`,
-                price: totalPrice,
-                quantity: 1,
-            };
+        // Create ingredient names for display
+        const parts = [];
+        if (selectedMasa) parts.push(selectedMasa.name);
+        if (selectedSalsa) parts.push(selectedSalsa.name);
 
-            setCart([...cart, newPizza]);
-            alert(`¡Pixza agregada al carrito! ＼(￣▽￣)／ Total: $${totalPrice.toLocaleString("es-CL")}`);
-            resetPizza();
+        const uniqueToppingIds = [...new Set(ingredients.map(i => i.id))];
+        uniqueToppingIds.forEach(id => {
+            const data = availableIngredients.find(a => a.id === id);
+            if (data) parts.push(data.name);
+        });
 
-        } catch (error) {
-            console.error('❌ Error guardando pixza:', error);
-            alert('Error al guardar la pixza en el servidor. Se guardó localmente.');
+        const newPizza = {
+            id: `custom-${Date.now()}`,
+            name: `Pixza Personalizada (${parts.join(", ")})`,
+            price: totalPrice,
+            quantity: 1,
+            // Data for backend
+            isCustom: true,
+            size: "Medium",
+            ingredientIds: allIngredientIds,
+            totalPrice: totalPrice,
+        };
 
-            // Fallback: save to cart locally even if backend fails
-            const ingredientsList = ingredients.map((ing) => {
-                const data = availableIngredients.find((a) => a.id === ing.id);
-                return data.name;
-            });
-
-            const newPizza = {
-                id: Date.now(),
-                name: `Pixza Personalizada (${ingredientsList.join(", ")})`,
-                price: totalPrice,
-                quantity: 1,
-            };
-
-            setCart([...cart, newPizza]);
-            resetPizza();
-        }
+        setCart([...cart, newPizza]);
+        alert(`¡Pixza agregada al carrito! ＼(￣▽￣)／ Total: $${totalPrice.toLocaleString("es-CL")}`);
+        resetPizza();
     };
 
     const getCanvasClassName = () => {
@@ -346,6 +362,11 @@ export default function ArmaTuPizza({ cart, setCart }) {
         if (draggingOnCanvas) return `${styles.canvas} ${styles.dragging}`;
         return `${styles.canvas} ${styles.default}`;
     };
+
+    // Filter ingredients by type
+    const masas = availableIngredients.filter(i => i.type === 'masa');
+    const salsas = availableIngredients.filter(i => i.type === 'salsa');
+    const toppings = availableIngredients.filter(i => i.type === 'topping');
 
     if (loading) {
         return (
@@ -373,12 +394,12 @@ export default function ArmaTuPizza({ cart, setCart }) {
             <div className={styles.header}>
                 <h2 className={styles.title}>Crea tu propia Pixza</h2>
                 <p className={styles.subtitle}>
-                    Haz clic en un ingrediente para seleccionarlo, luego haz clic en la pixza para colocarlo (˶ᵔ ᵕ ᵔ˶)
+                    Selecciona masa, salsa y toppings para tu pixza (˶ᵔ ᵕ ᵔ˶)
                 </p>
             </div>
 
             <div className={styles.layout}>
-                {/* DIV1 - Pizza Canvas */}
+                {/* Pizza Canvas */}
                 <div className={styles.canvasContainer}>
                     <canvas
                         ref={canvasRef}
@@ -395,46 +416,103 @@ export default function ArmaTuPizza({ cart, setCart }) {
                     </div>
                 </div>
 
-                {/* DIV2 - Sidebar */}
+                {/* Sidebar */}
                 <div className={styles.sidebar}>
-                    {/* DIV2.1 - Ingredients Section */}
-                    <div className={styles.ingredientsSection}>
-                        <h3 className={styles.sectionTitle}>Ingredientes Disponibles</h3>
-                        <div className={styles.ingredientsGrid}>
-                            {availableIngredients.map((ingredient) => {
-                                const canAdd = canAddIngredient(ingredient);
-                                const selected = selectedIngredient?.id === ingredient.id;
-                                const count = getIngredientCount(ingredient.id);
 
-                                return (
+                    {/* MASA Section */}
+                    {masas.length > 0 && (
+                        <div className={styles.ingredientsSection}>
+                            <h3 className={styles.sectionTitle}>🍞 Masa</h3>
+                            <div className={styles.ingredientsGrid}>
+                                {masas.map((masa) => (
                                     <div
-                                        key={ingredient.id}
-                                        onClick={() => handleIngredientClick(ingredient)}
+                                        key={masa.id}
+                                        onClick={() => handleMasaClick(masa)}
                                         className={`${styles.ingredientCard} ${
-                                            selected ? styles.selected : ""
-                                        } ${!canAdd ? styles.disabled : ""}`}
+                                            selectedMasa?.id === masa.id ? styles.selected : ""
+                                        }`}
                                     >
-                                        <img
-                                            src={ingredient.image}
-                                            alt={ingredient.name}
-                                            className={styles.ingredientImage}
-                                        />
-                                        <div className={styles.ingredientName}>{ingredient.name}</div>
+                                        <div className={styles.ingredientName}>{masa.name}</div>
                                         <div className={styles.ingredientPrice}>
-                                            ${ingredient.price.toLocaleString("es-CL")}
-                                        </div>
-                                        <div className={`${styles.ingredientCount} ${
-                                            ingredient.type === "salsa" ? styles.salsa : ""
-                                        }`}>
-                                            {ingredient.type === "salsa" ? "1 salsa" : `${count}/${ingredient.max}`}
+                                            +${masa.price.toLocaleString("es-CL")}
                                         </div>
                                     </div>
-                                );
-                            })}
+                                ))}
+                            </div>
                         </div>
-                    </div>
+                    )}
 
-                    {/* DIV2.2 - Controls Section */}
+                    {/* SALSA Section */}
+                    {salsas.length > 0 && (
+                        <div className={styles.ingredientsSection}>
+                            <h3 className={styles.sectionTitle}>🍅 Salsa</h3>
+                            <div className={styles.ingredientsGrid}>
+                                {salsas.map((salsa) => (
+                                    <div
+                                        key={salsa.id}
+                                        onClick={() => handleSalsaClick(salsa)}
+                                        className={`${styles.ingredientCard} ${
+                                            selectedSalsa?.id === salsa.id ? styles.selected : ""
+                                        }`}
+                                    >
+                                        <div
+                                            className={styles.salsaColor}
+                                            style={{ backgroundColor: salsa.color }}
+                                        />
+                                        <div className={styles.ingredientName}>{salsa.name}</div>
+                                        <div className={styles.ingredientPrice}>
+                                            +${salsa.price.toLocaleString("es-CL")}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* TOPPINGS Section */}
+                    {toppings.length > 0 && (
+                        <div className={styles.ingredientsSection}>
+                            <h3 className={styles.sectionTitle}>🧀 Toppings</h3>
+                            <p className={styles.sectionHint}>
+                                {selectedIngredient
+                                    ? `Haz clic en la pizza para colocar ${selectedIngredient.name}`
+                                    : "Selecciona un topping y colócalo en la pizza"
+                                }
+                            </p>
+                            <div className={styles.ingredientsGrid}>
+                                {toppings.map((topping) => {
+                                    const canAdd = canAddTopping(topping);
+                                    const selected = selectedIngredient?.id === topping.id;
+                                    const count = getIngredientCount(topping.id);
+
+                                    return (
+                                        <div
+                                            key={topping.id}
+                                            onClick={() => handleToppingClick(topping)}
+                                            className={`${styles.ingredientCard} ${
+                                                selected ? styles.selected : ""
+                                            } ${!canAdd ? styles.disabled : ""}`}
+                                        >
+                                            <img
+                                                src={topping.image}
+                                                alt={topping.name}
+                                                className={styles.ingredientImage}
+                                            />
+                                            <div className={styles.ingredientName}>{topping.name}</div>
+                                            <div className={styles.ingredientPrice}>
+                                                +${topping.price.toLocaleString("es-CL")}
+                                            </div>
+                                            <div className={styles.ingredientCount}>
+                                                {count}/{topping.max}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Controls */}
                     <div className={styles.controlsSection}>
                         <div className={styles.buttonGroup}>
                             <button
@@ -458,29 +536,39 @@ export default function ArmaTuPizza({ cart, setCart }) {
                         </button>
                     </div>
 
-                    {/* Ingredients Summary */}
-                    {ingredients.length > 0 && (
-                        <div className={styles.ingredientsSummary}>
-                            <h3 className={styles.summaryTitle}>
-                                Ingredientes en tu pixza ({ingredients.length})
-                            </h3>
-                            <div className={styles.ingredientsList}>
-                                {ingredients.map((ing) => {
-                                    const data = availableIngredients.find((ai) => ai.id === ing.id);
-                                    return (
-                                        <span key={ing.instanceId} className={styles.ingredientTag}>
-                                            <img
-                                                src={data.image}
-                                                alt={data.name}
-                                                className={styles.ingredientTagImage}
-                                            />
-                                            {data.name}
-                                        </span>
-                                    );
-                                })}
+                    {/* Summary */}
+                    <div className={styles.ingredientsSummary}>
+                        <h3 className={styles.summaryTitle}>Tu Pixza</h3>
+                        <div className={styles.summaryList}>
+                            {selectedMasa && (
+                                <div className={styles.summaryItem}>
+                                    <span>🍞 {selectedMasa.name}</span>
+                                    <span>+${selectedMasa.price.toLocaleString("es-CL")}</span>
+                                </div>
+                            )}
+                            {selectedSalsa && (
+                                <div className={styles.summaryItem}>
+                                    <span>🍅 {selectedSalsa.name}</span>
+                                    <span>+${selectedSalsa.price.toLocaleString("es-CL")}</span>
+                                </div>
+                            )}
+                            {ingredients.length > 0 && (
+                                <div className={styles.summaryItem}>
+                                    <span>🧀 Toppings ({ingredients.length})</span>
+                                    <span>
+                                        +${ingredients.reduce((sum, ing) => {
+                                        const data = availableIngredients.find(a => a.id === ing.id);
+                                        return sum + (data?.price || 0);
+                                    }, 0).toLocaleString("es-CL")}
+                                    </span>
+                                </div>
+                            )}
+                            <div className={styles.summaryTotal}>
+                                <span>Base</span>
+                                <span>${BASE_PRICE.toLocaleString("es-CL")}</span>
                             </div>
                         </div>
-                    )}
+                    </div>
                 </div>
             </div>
         </div>

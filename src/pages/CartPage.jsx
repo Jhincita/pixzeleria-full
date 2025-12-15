@@ -3,7 +3,6 @@ import Window from "../components/Window";
 import CheckoutResult from "./CheckoutResult";
 
 import { orderAPI } from "../services/api.js";
-// Order API
 
 export default function CartPage({ cart, setCart }) {
     const [showCheckout, setShowCheckout] = useState(false);
@@ -15,16 +14,16 @@ export default function CartPage({ cart, setCart }) {
     };
 
     const updateQuantity = (id, amount) => {
-        setCart(cart. map(item =>
-            item. id === id
-                ? { ... item, quantity: Math.max(item.quantity + amount, 1) }
+        setCart(cart.map(item =>
+            item.id === id
+                ? { ...item, quantity: Math.max(item.quantity + amount, 1) }
                 : item
         ));
     };
 
     const total = cart.reduce(
         (sum, item) => {
-            const precioSeguro = item?.price ??  0;
+            const precioSeguro = item?.price ?? 0;
             return sum + (precioSeguro * item.quantity);
         },
         0
@@ -34,28 +33,37 @@ export default function CartPage({ cart, setCart }) {
         setIsLoading(true);
 
         try {
-            // Backend expects menuPizzaIds - array of pizza IDs
-            // For quantities > 1, repeat the ID
-            const menuPizzaIds = [];
-            cart.forEach(item => {
-                for (let i = 0; i < item.quantity; i++) {
-                    menuPizzaIds. push(item.id);
+            // Transform cart items to new format
+            const pizzas = cart.map(item => {
+                if (item.isCustom) {
+                    // Custom pizza
+                    return {
+                        custom: true,
+                        name: item.name || 'Pizza Personalizada',
+                        size: item.size || 'Medium',
+                        ingredientIds: item.ingredientIds || [],
+                        totalPrice: item.totalPrice || item.price,
+                        quantity: item.quantity || 1
+                    };
+                } else {
+                    // Menu pizza
+                    return {
+                        custom: false,
+                        menuPizzaId: item.id,
+                        quantity: item.quantity || 1
+                    };
                 }
             });
 
-            const orderPayload = {
-                menuPizzaIds: menuPizzaIds
-            };
+            const orderPayload = { pizzas };
 
-            console.log("Sending order payload:", orderPayload);
+            console.log("📦 Sending order payload:", orderPayload);
 
-            // Send to backend
             const response = await orderAPI.createOrder(orderPayload);
-            console.log("Order created:", response.data);
+            console.log("✅ Order created:", response.data);
 
-            // Set order data for confirmation screen (use local cart data for display)
             setOrderData({
-                id:  response.data.id,
+                id: response.data.id,
                 items: [...cart],
                 total: total,
                 timestamp: new Date()
@@ -65,7 +73,7 @@ export default function CartPage({ cart, setCart }) {
             setShowCheckout(true);
 
         } catch (error) {
-            console. error("Failed to create order:", error);
+            console.error("❌ Failed to create order:", error);
             alert("Error al procesar tu pedido. Intenta de nuevo.");
         } finally {
             setIsLoading(false);
@@ -98,8 +106,7 @@ export default function CartPage({ cart, setCart }) {
             ) : (
                 <>
                     <ul style={{ listStyle: "none", padding: 0 }}>
-                        {cart.map(({ id, name, price, quantity }) => {
-                            // 👇 PROTECCIÓN:  Validar precio antes de usarlo
+                        {cart.map(({ id, name, price, quantity, isCustom }) => {
                             const precioSeguro = price ?? 0;
                             const precioFormateado = precioSeguro.toFixed(2);
                             const subtotal = (precioSeguro * quantity).toFixed(2);
@@ -109,7 +116,7 @@ export default function CartPage({ cart, setCart }) {
                                     key={id}
                                     style={{
                                         marginBottom: "12px",
-                                        padding:  "12px",
+                                        padding: "12px",
                                         border: "2px solid #000",
                                         backgroundColor: "#fff"
                                     }}
@@ -119,7 +126,14 @@ export default function CartPage({ cart, setCart }) {
                                         justifyContent: 'space-between',
                                         marginBottom: '8px'
                                     }}>
-                                        <strong style={{ fontSize: '1.1em' }}>{name}</strong>
+                                        <strong style={{ fontSize: '1.1em' }}>
+                                            {name}
+                                            {isCustom && <span style={{
+                                                marginLeft: '8px',
+                                                fontSize: '0.8em',
+                                                color: '#666'
+                                            }}>✨ Custom</span>}
+                                        </strong>
                                         <span style={{ color: '#666' }}>
                                             ${precioFormateado} c/u
                                         </span>
@@ -127,14 +141,14 @@ export default function CartPage({ cart, setCart }) {
 
                                     <div
                                         style={{
-                                            display:  "flex",
+                                            display: "flex",
                                             alignItems: "center",
                                             justifyContent: "space-between",
-                                            gap:  "8px",
+                                            gap: "8px",
                                             marginTop: "10px"
                                         }}
                                     >
-                                        <div style={{ display: 'flex', gap: '8px', alignItems:  'center' }}>
+                                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                                             <button
                                                 onClick={() => updateQuantity(id, -1)}
                                                 style={{
@@ -142,7 +156,7 @@ export default function CartPage({ cart, setCart }) {
                                                     border: '2px solid #000',
                                                     backgroundColor: '#f4f4f4',
                                                     cursor: 'pointer',
-                                                    fontWeight:  'bold'
+                                                    fontWeight: 'bold'
                                                 }}
                                             >
                                                 −
@@ -158,7 +172,7 @@ export default function CartPage({ cart, setCart }) {
                                                 onClick={() => updateQuantity(id, +1)}
                                                 style={{
                                                     padding: '6px 12px',
-                                                    border:  '2px solid #000',
+                                                    border: '2px solid #000',
                                                     backgroundColor: '#f4f4f4',
                                                     cursor: 'pointer',
                                                     fontWeight: 'bold'
@@ -171,11 +185,11 @@ export default function CartPage({ cart, setCart }) {
                                         <button
                                             onClick={() => removeItem(id)}
                                             style={{
-                                                padding:  '6px 12px',
+                                                padding: '6px 12px',
                                                 border: '2px solid #000',
                                                 backgroundColor: '#ff6b6b',
                                                 color: '#fff',
-                                                cursor:  'pointer',
+                                                cursor: 'pointer',
                                                 fontWeight: 'bold'
                                             }}
                                         >
@@ -185,7 +199,7 @@ export default function CartPage({ cart, setCart }) {
 
                                     <div style={{
                                         marginTop: '8px',
-                                        textAlign:  'right',
+                                        textAlign: 'right',
                                         fontWeight: 'bold'
                                     }}>
                                         Subtotal: ${subtotal}
@@ -199,7 +213,7 @@ export default function CartPage({ cart, setCart }) {
                         marginTop: '20px',
                         padding: '15px',
                         border: '2px solid #000',
-                        backgroundColor:  '#f9f9f9'
+                        backgroundColor: '#f9f9f9'
                     }}>
                         <div style={{
                             display: 'flex',
