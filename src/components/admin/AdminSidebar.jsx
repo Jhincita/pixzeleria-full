@@ -55,7 +55,7 @@ const AdminSidebar = ({ activeSection, setActiveSection }) => {
           onClick={handleLogout}
           style={{ width: '100%', padding: '10px', background: '#c0392b', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
         >
-          Cerrar Sesión
+          Volver al Home
         </button>
       </div>
     </aside>
